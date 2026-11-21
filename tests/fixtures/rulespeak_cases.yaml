@@ -1,0 +1,41 @@
+# Checker test cases. Each case gives a statement and either the template it
+# must match (conformant) or the defect codes it must raise (exactly).
+conformant:
+  - {text: "Each order must have at least one line item.", template: RS-T01}
+  - {text: "A customer must have a billing address if the customer has placed an order.", template: RS-T01}
+  - {text: "An invoice must be paid within 30 days unless the customer has extended terms.", template: RS-T01}
+  - {text: "An order must not be shipped if the outstanding balance exceeds the credit limit.", template: RS-T02}
+  - {text: "A user account must not be shared.", template: RS-T02}
+  - {text: "A refund may be issued only if the purchase was made within the last 30 days.", template: RS-T03}
+  - {text: "A loan may only be approved by a credit officer.", template: RS-T03}
+  - {text: "Only a manager may approve a discount above 20 percent.", template: RS-T04}
+  - {text: "A customer is always considered preferred if the customer has placed more than 10 orders.", template: RS-T05}
+  - {text: "A claim is never considered complete unless it has a signed declaration.", template: RS-T05}
+  - {text: "A shipment is considered late only if it is delivered after its promised date.", template: RS-T05b}
+  - {text: "The order total must be computed as the sum of the line item amounts.", template: RS-T06}
+  - {text: "An order total is always computed as the sum of the line item amounts.", template: RS-T06}
+  - {text: "A premium must be at least 2.5 percent of the insured value.", template: RS-T01}
+  - {text: "An  order   must have a customer.", template: RS-T01}
+
+# Conformant, but must carry exactly these warning codes.
+warnings:
+  - {text: "An invoice must always have a due date.", template: RS-T01, codes: [RS-STY-003]}
+
+defective:
+  - {text: "A customer must have an account. The account must be active.", codes: [RS-STR-001, RS-STR-002]}
+  - {text: "A customer must have an account", codes: [RS-STR-001]}
+  - {text: "An order must have a customer and must have at least one line item.", codes: [RS-STR-002]}
+  - {text: "If the balance is overdue, an order must not be shipped.", codes: [RS-STR-003]}
+  - {text: "When a claim is filed, an adjuster must be assigned.", codes: [RS-STR-003]}
+  - {text: "Orders are shipped within two days.", codes: [RS-KW-001]}
+  - {text: "A customer should provide a delivery address.", codes: [RS-KW-002]}
+  - {text: "A customer has to provide a delivery address.", codes: [RS-KW-002]}
+  - {text: "A customer may cancel an order.", codes: [RS-KW-003]}
+  - {text: "Customers must register.", codes: [RS-TPL-001]}
+  - {text: "The system must reject an order without a customer.", codes: [RS-STY-001]}
+  - {text: "The system shall reject an order without a customer.", codes: [RS-KW-002, RS-STY-001]}
+  - {text: "An order must be checked and then shipped.", codes: [RS-STY-002]}
+  - {text: "A complaint must be answered as soon as possible.", codes: [RS-VAG-001]}
+  - {text: "A claim must be reviewed if it is appropriate.", codes: [RS-VAG-001]}
+  - {text: "A claim must be reviewed if it exceeds 1000 dollars and/or is flagged.", codes: [RS-VAG-002]}
+  - {text: "", codes: [RS-KW-001]}

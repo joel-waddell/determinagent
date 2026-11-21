@@ -1,0 +1,87 @@
+# Gherkin conformance profile for DeterminAgent (Phase 0.1).
+#
+# Layer 1 is the official Cucumber grammar, enforced by the official parser
+# (the gherkin-official package). That parser is permissive: free text under
+# a Feature or Scenario line becomes a "description" instead of an error, so a
+# document with no steps at all can parse. Layer 2 is this profile: the extra
+# structural rules a generated requirement must meet.
+#
+# Status: draft for domain-expert review. Treat as versioned config.
+version: 0.1.0
+languages: [en]       # POC is English only.
+max_steps_per_scenario: 12
+
+defects:
+  GK-PARSE-001:
+    severity: error
+    title: Does not parse
+    description: The official Gherkin parser rejected the document.
+  GK-LANG-001:
+    severity: error
+    title: Unsupported language
+    description: The document declares a language outside the POC profile.
+  GK-STR-001:
+    severity: error
+    title: No Feature
+    description: The document has no Feature.
+  GK-STR-002:
+    severity: error
+    title: Feature has no name
+  GK-STR-003:
+    severity: error
+    title: No scenarios
+    description: The Feature (including its Rules) contains no Scenario or Scenario Outline.
+  GK-STR-004:
+    severity: error
+    title: Scenario has no name
+  GK-STR-005:
+    severity: error
+    title: Scenario has no steps
+  GK-STR-006:
+    severity: warning
+    title: Duplicate scenario name
+  GK-SEQ-001:
+    severity: error
+    title: Missing When step
+    description: Each scenario needs at least one action (When).
+  GK-SEQ-002:
+    severity: error
+    title: Missing Then step
+    description: Each scenario needs at least one outcome (Then).
+  GK-SEQ-003:
+    severity: warning
+    title: Missing Given step
+    description: The scenario has no context step and no Background supplies one.
+  GK-SEQ-004:
+    severity: error
+    title: Steps out of order
+    description: Steps must run Given, then When, then Then. A Given after a When, or a When after a Then, means the scenario tests more than one behavior.
+  GK-SEQ-005:
+    severity: error
+    title: Scenario starts with And or But
+  GK-SEQ-006:
+    severity: error
+    title: Background has non-Given step
+    description: A Background sets context only.
+  GK-OUT-001:
+    severity: error
+    title: Outline without Examples
+  GK-OUT-002:
+    severity: error
+    title: Placeholder not in Examples
+    description: A <placeholder> in a step has no matching Examples column.
+  GK-OUT-003:
+    severity: error
+    title: Examples table has no rows
+  GK-STY-001:
+    severity: warning
+    title: Free text in scenario
+    description: A Scenario carries description text. Free text belongs in the Feature description, if anywhere.
+  GK-STY-002:
+    severity: warning
+    title: Asterisk step
+    description: '"*" hides the step''s role; use Given, When, Then, And or But.'
+  GK-STY-003:
+    severity: warning
+    title: Too many steps
+    description: The scenario has more steps than the profile allows.
