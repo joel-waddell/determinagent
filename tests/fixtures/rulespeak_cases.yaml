@@ -32,6 +32,8 @@ defective:
   - {text: "A customer has to provide a delivery address.", codes: [RS-KW-002]}
   - {text: "A customer may cancel an order.", codes: [RS-KW-003]}
   - {text: "Customers must register.", codes: [RS-TPL-001]}
+  - {text: "A customer is considered preferred.", codes: [RS-TPL-001]}
+  - {text: "The order total is computed as the sum.", codes: [RS-TPL-001]}
   - {text: "The system must reject an order without a customer.", codes: [RS-STY-001]}
   - {text: "The system shall reject an order without a customer.", codes: [RS-KW-002, RS-STY-001]}
   - {text: "An order must be checked and then shipped.", codes: [RS-STY-002]}

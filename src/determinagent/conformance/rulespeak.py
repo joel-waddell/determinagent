@@ -167,7 +167,7 @@ def check(
                 result.slots = {k: v for k, v in m.groupdict().items() if v is not None}
                 break
         else:
-            if keyword_count and not {"RS-STR-003", "RS-KW-003"} & set(result.codes):
+            if not {"RS-STR-003", "RS-KW-001", "RS-KW-002", "RS-KW-003"} & set(result.codes):
                 add(p.defect("RS-TPL-001"))
 
     if vocabulary is not None and result.template_id:
