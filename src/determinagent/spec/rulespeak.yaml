@@ -1,0 +1,154 @@
+# RuleSpeak conformance profile for DeterminAgent (Phase 0.1).
+#
+# A machine-readable formalization of the RuleSpeak sentence forms and keyword
+# guidance published by Business Rule Solutions (Ronald G. Ross). It is the
+# deterministic half of RuleSpeak checking: a statement must match one approved
+# sentence template and trip no error-level defect. Whether a statement says
+# what the business intended is semantic work left to the SLM.
+#
+# Status: draft for domain-expert review. Changing this file changes what
+# "well-formed" means for the golden set, so treat it as versioned config.
+version: 0.1.0
+language: en
+
+# Words that may open a statement and introduce its subject.
+determiners: [A, An, Each, Every, The]
+
+# Rule keywords. A statement carries exactly one.
+rule_keywords: [must, may]
+
+# Templates are tried in order; the first match wins. Patterns are matched
+# case-insensitively against the whitespace-normalized statement, and {det}
+# expands to the determiners above. Named groups are returned as slots.
+templates:
+  - id: RS-T06
+    name: Computation
+    kind: definitional
+    form: "<term> must be computed as <expression>."
+    pattern: '^(?:(?P<det>{det}) )?(?P<subject>.+?) (?:must be|is always) computed as (?P<expression>.+)\.$'
+    example: "The order total must be computed as the sum of the line item amounts."
+
+  - id: RS-T05
+    name: Classification
+    kind: definitional
+    form: "<term> is always|never considered <classification> if|unless <condition>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) is (?P<polarity>always|never) considered (?P<classification>.+?) (?P<cond_kw>if|unless) (?P<condition>.+)\.$'
+    example: "A customer is always considered preferred if the customer has placed more than 10 orders."
+
+  - id: RS-T05b
+    name: Restricted classification
+    kind: definitional
+    form: "<term> is considered <classification> only if <condition>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) is considered (?P<classification>.+?) only if (?P<condition>.+)\.$'
+    example: "A shipment is considered late only if it is delivered after its promised date."
+
+  - id: RS-T02
+    name: Prohibition
+    kind: behavioral
+    form: "<subject> must not <predicate> [if|unless <condition>]."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) must not (?P<predicate>.+?)(?: (?P<cond_kw>if|unless) (?P<condition>.+))?\.$'
+    example: "An order must not be shipped if the outstanding balance exceeds the credit limit."
+
+  - id: RS-T03
+    name: Restricted permission
+    kind: behavioral
+    form: "<subject> may <predicate> only <restriction>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) may (?:only (?P<predicate_a>.+?)|(?P<predicate_b>.+?) only (?P<restriction>.+))\.$'
+    example: "A refund may be issued only if the purchase was made within the last 30 days."
+
+  - id: RS-T04
+    name: Restricted eligibility
+    kind: behavioral
+    form: "Only <qualified subject> may <predicate>."
+    pattern: '^Only (?P<subject>.+?) may (?P<predicate>.+)\.$'
+    example: "Only a manager may approve a discount above 20 percent."
+
+  - id: RS-T01
+    name: Obligation
+    kind: behavioral
+    form: "<subject> must <predicate> [if|unless <condition>]."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) must (?!not\b)(?P<predicate>.+?)(?: (?P<cond_kw>if|unless) (?P<condition>.+))?\.$'
+    example: "Each order must have at least one line item."
+
+# Defect taxonomy. These codes are also the labels for the RuleSpeak
+# validation golden set (Phase 0.2). Severity "error" makes a statement
+# non-conformant; "warning" is reported but does not fail the check.
+defects:
+  RS-STR-001:
+    severity: error
+    title: Not a single sentence
+    description: A rule statement is exactly one sentence ending in a full stop.
+    example_bad: "A customer must have an account. The account must be active."
+  RS-STR-002:
+    severity: error
+    title: More than one rule
+    description: The statement carries more than one rule keyword, so it bundles several rules. Split it.
+    example_bad: "An order must have a customer and must have at least one line item."
+  RS-STR-003:
+    severity: error
+    title: Leading condition
+    description: The statement opens with a condition. RuleSpeak puts the subject and rule keyword first and the condition after.
+    example_bad: "If the balance is overdue, an order must not be shipped."
+  RS-KW-001:
+    severity: error
+    title: Missing rule keyword
+    description: The statement has no "must" or "may ... only", so it states a fact or a wish, not a rule.
+    example_bad: "Orders are shipped within two days."
+  RS-KW-002:
+    severity: error
+    title: Non-RuleSpeak modal
+    description: Uses a modal RuleSpeak avoids (should, shall, can, could, will, would, might, ought to, need to, has to, have to). Use "must" or "may ... only".
+    example_bad: "A customer should provide a delivery address."
+  RS-KW-003:
+    severity: error
+    title: Unrestricted permission
+    description: '"may" without "only" grants a permission and restricts nothing, so it is not a rule.'
+    example_bad: "A customer may cancel an order."
+  RS-TPL-001:
+    severity: error
+    title: No approved template
+    description: The statement uses a rule keyword but does not match any approved sentence template. Check that it opens with a determiner (A, An, Each, Every, The) or "Only".
+    example_bad: "Customers must register."
+  RS-STY-001:
+    severity: error
+    title: System-centric wording
+    description: Describes what a system or screen does. A business rule constrains the business, not the software.
+    example_bad: "The system must reject an order without a customer."
+  RS-STY-002:
+    severity: error
+    title: Procedural wording
+    description: Uses sequence or event words (then, after that, upon, afterwards, subsequently, followed by) that describe a process, not a constraint.
+    example_bad: "An order must be checked and then shipped."
+  RS-STY-003:
+    severity: warning
+    title: Redundant adverb after "must"
+    description: '"must always" and "must never" add nothing; use "must" or "must not".'
+    example_bad: "An invoice must always have a due date."
+  RS-STY-004:
+    severity: warning
+    title: Long statement
+    description: Over 40 words. Long statements usually hide several rules.
+  RS-VAG-001:
+    severity: error
+    title: Vague term
+    description: Uses a term with no testable meaning (for example appropriate, reasonable, some, several, as soon as possible, if possible, etc.).
+    example_bad: "A complaint must be answered as soon as possible."
+  RS-VAG-002:
+    severity: error
+    title: Ambiguous conjunction
+    description: '"and/or" leaves it unclear whether both or either condition applies.'
+    example_bad: "A claim must be reviewed if it exceeds 1000 dollars and/or is flagged."
+  RS-VOC-001:
+    severity: error
+    title: Subject not in vocabulary
+    description: When a vocabulary (fact model terms) is supplied, the subject must use one of its terms.
+
+lexicon:
+  non_rulespeak_modals: [should, shall, can, could, will, would, might, "ought to", "need to", "needs to", "has to", "have to"]
+  system_terms: ["the system", "the application", "the software", "the screen", "the user interface", "the ui", "the database", "the app"]
+  procedural_terms: [then, "after that", upon, afterwards, subsequently, "followed by"]
+  vague_terms: [appropriate, appropriately, reasonable, reasonably, some, several, many, few, various, adequate, sufficient, timely, "as soon as possible", asap, "if possible", "where applicable", "as needed", "when necessary", "as appropriate", etc, "and so on", normally, usually, generally]
+  leading_condition_words: [if, when, whenever, unless, in case, provided]
+  redundant_adverbs: [always, never]
+
+max_words: 40

@@ -1,0 +1,203 @@
+# Gherkin checker cases shared by the Python and JavaScript cores.
+# 'errors' must be non-conformant and 'warnings' conformant, each raising
+# exactly the listed defect codes.
+conformant:
+- source: |
+    Feature: Refund requests
+      As a customer I want to request a refund so that I get my money back.
+
+      Background:
+        Given a registered customer
+
+      Scenario: Refund within the return window
+        Given an order delivered 10 days ago
+        When the customer requests a refund
+        Then the refund is approved
+        And the customer is notified
+
+      Scenario Outline: Refund outside the return window
+        Given an order delivered <days> days ago
+        When the customer requests a refund
+        Then the refund is <outcome>
+
+        Examples:
+          | days | outcome  |
+          | 31   | rejected |
+          | 90   | rejected |
+
+      Rule: Gift cards are never refunded
+        Scenario: Gift card refund
+          Given an order paid by gift card
+          When the customer requests a refund
+          Then the refund is rejected
+warnings:
+- source: |
+    Feature: f
+      Scenario: s
+        When b
+        Then c
+  codes:
+  - GK-SEQ-003
+- source: |
+    Feature: f
+      Scenario: s
+        Free text here
+        Given a
+        When b
+        Then c
+  codes:
+  - GK-STY-001
+- source: |
+    Feature: f
+      Scenario: s
+        * a
+        When b
+        Then c
+  codes:
+  - GK-STY-002
+  - GK-SEQ-003
+- source: |
+    Feature: f
+      Scenario: s
+        Given a
+        When b
+        Then c
+      Scenario: S
+        Given a
+        When b
+        Then c
+  codes:
+  - GK-STR-006
+- source: |
+    Feature: f
+      Scenario: s
+        Given a
+        When b
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+        Then c
+  codes:
+  - GK-STY-003
+errors:
+- source: |
+    nothing here
+  codes:
+  - GK-PARSE-001
+- source: ''
+  codes:
+  - GK-STR-001
+- source: |
+    Feature:
+      Scenario: s
+        Given a
+        When b
+        Then c
+  codes:
+  - GK-STR-002
+- source: |
+    Feature: f
+      Just a description
+  codes:
+  - GK-STR-003
+- source: |
+    Feature: f
+      Scenario:
+        Given a
+        When b
+        Then c
+  codes:
+  - GK-STR-004
+- source: |
+    Feature: f
+      Scenario: s
+  codes:
+  - GK-STR-005
+- source: |
+    Feature: f
+      Scenario: s
+        Given a
+        Then c
+  codes:
+  - GK-SEQ-001
+- source: |
+    Feature: f
+      Scenario: s
+        Given a
+        When b
+  codes:
+  - GK-SEQ-002
+- source: |
+    Feature: f
+      Scenario: s
+        When b
+        Then c
+        When d
+        Then e
+  codes:
+  - GK-SEQ-003
+  - GK-SEQ-004
+- source: |
+    Feature: f
+      Scenario: s
+        And a
+        When b
+        Then c
+  codes:
+  - GK-SEQ-005
+  - GK-SEQ-003
+- source: |
+    Feature: f
+      Background:
+        When x
+      Scenario: s
+        Given a
+        When b
+        Then c
+  codes:
+  - GK-SEQ-006
+- source: |
+    Feature: f
+      Scenario Outline: s
+        Given <a>
+        When b
+        Then c
+  codes:
+  - GK-OUT-001
+- source: |
+    Feature: f
+      Scenario Outline: s
+        Given <a>
+        When <b>
+        Then c
+        Examples:
+          | a |
+          | 1 |
+  codes:
+  - GK-OUT-002
+- source: |
+    Feature: f
+      Scenario Outline: s
+        Given <a>
+        When b
+        Then c
+        Examples:
+          | a |
+  codes:
+  - GK-OUT-003
+- source: |
+    # language: fr
+    Fonctionnalité: f
+      Scénario: s
+        Soit a
+        Quand b
+        Alors c
+  codes:
+  - GK-LANG-001
