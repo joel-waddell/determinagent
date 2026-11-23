@@ -1,6 +1,6 @@
 # RuleSpeak profile v0.1.0
 
-RuleSpeak is a set of guidelines from Business Rule Solutions (Ronald G. Ross) for writing business rules in structured natural language. This profile formalizes the parts that can be checked deterministically. The machine-readable source of truth is [`rulespeak.yaml`](../../src/determinagent/spec/rulespeak.yaml), and the checker is [`conformance/rulespeak.py`](../../src/determinagent/conformance/rulespeak.py).
+RuleSpeak is a set of guidelines from Business Rule Solutions (Ronald G. Ross) for writing business rules in structured natural language. This profile formalizes the parts that can be checked deterministically. The machine-readable source of truth is [`rulespeak.yaml`](../../src/determinagent/spec/rulespeak.yaml), and the checker is [`js/src/conformance/rulespeak.js`](../../js/src/conformance/rulespeak.js), with a Python twin in [`conformance/rulespeak.py`](../../src/determinagent/conformance/rulespeak.py). Patterns use Python's `(?P<name>…)` group syntax, which the JavaScript loader converts.
 
 > Status: draft. The templates and word lists need review by someone who writes RuleSpeak professionally before golden-set labelling starts (0.2).
 

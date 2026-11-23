@@ -27,7 +27,7 @@ Field lists below are the working definition for 0.2 (golden set) and 0.7 (contr
 
 - **Input:** business intent (one constraint, stated in plain terms), the domain vocabulary (fact model terms), and optional context such as the policy source.
 - **Output:** one or more rule statements, each conformant to the RuleSpeak profile and using only vocabulary terms as subjects.
-- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary)`.
+- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary)` in either core.
 - **Semantic acceptance:** the statements express the intent, no more and no less (rubric, Phase 0.2).
 
 ### T2 RuleSpeak validation
@@ -41,7 +41,7 @@ Field lists below are the working definition for 0.2 (golden set) and 0.7 (contr
 
 - **Input:** a user requirement (role, capability, benefit and acceptance criteria where available).
 - **Output:** one Gherkin Feature with at least one Scenario, conformant to the Gherkin profile.
-- **Deterministic acceptance:** `gherkin.check(document)` is conformant.
+- **Deterministic acceptance:** `gherkin.check(document)` is conformant in either core.
 - **Semantic acceptance:** scenarios cover the acceptance criteria and are testable (rubric, Phase 0.2).
 
 ## Versioning

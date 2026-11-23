@@ -1,8 +1,8 @@
 # Gherkin profile v0.1.0
 
-Gherkin output is checked in two layers. The machine-readable source of truth is [`gherkin.yaml`](../../src/determinagent/spec/gherkin.yaml), and the checker is [`conformance/gherkin.py`](../../src/determinagent/conformance/gherkin.py).
+Gherkin output is checked in two layers. The machine-readable source of truth is [`gherkin.yaml`](../../src/determinagent/spec/gherkin.yaml), and the checker is [`js/src/conformance/gherkin.js`](../../js/src/conformance/gherkin.js), with a Python twin in [`conformance/gherkin.py`](../../src/determinagent/conformance/gherkin.py).
 
-1. **Official grammar.** The document must parse with the official Cucumber parser, the [`gherkin-official`](https://pypi.org/project/gherkin-official/) package. That is the grammar the plan names, so we use it rather than re-implementing it.
+1. **Official grammar.** The document must parse with the official Cucumber parser, [`@cucumber/gherkin`](https://www.npmjs.com/package/@cucumber/gherkin) in JavaScript and [`gherkin-official`](https://pypi.org/project/gherkin-official/) in Python, both published by the Cucumber project from one grammar. That is the grammar the plan names, so we use it rather than re-implementing it.
 2. **DeterminAgent profile.** The official parser is permissive: free text under a Feature or Scenario becomes a description, so a document with no steps can still parse. The profile adds the structure a generated requirement must have.
 
 > Status: draft for review alongside the RuleSpeak profile.
