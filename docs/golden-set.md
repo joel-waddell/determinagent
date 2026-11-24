@@ -45,12 +45,35 @@ Generated outputs are not compared word for word against a reference statement o
 
 1. Claude drafts a batch, with a proposed label on every case, and checks every reference with both checkers.
 2. [`tools/golden/workbook.py`](../tools/golden/workbook.py) builds a spreadsheet with one sheet per task. Grey columns show the case and the draft. Yellow columns are for the expert: **Agree**, **Correct** (with the corrected values) or **Drop**.
-3. The expert returns the workbook. `workbook.py import` writes the labels back into the YAML.
+3. The expert returns the workbook. `workbook.py import` writes the labels back into the YAML. Spreadsheets often flatten a multi-line cell into one line, so the importer restores the line breaks in a corrected feature, using the Gherkin keywords and table rows. Acceptance checks have no such markers, so a flattened list is split by hand.
 4. Disagreements between the draft and the label are reviewed to improve the labelling guide and the drafting for the next batch.
 
 **Batches:** a pilot of 60 cases (20 per task), then 7 batches of 120. The pilot calibrates the format and the guide before most of the effort is spent. It is all in the dev split.
 
 **Expert time:** reviewing a pre-drafted case takes about 1 to 2 minutes, so the full set needs about 15 to 30 hours. The pilot needs about 1 to 2 hours.
+
+## Pilot labelling results (2026-11-24)
+
+Joel labelled all 60 pilot cases and dropped none. He agreed with 40 drafts and corrected 20.
+
+| Task | Agreed | Corrected | What the corrections changed |
+| --- | --- | --- | --- |
+| T1 Generation | 15 | 5 | One behaviour flipped from draft to ask (P015), four statements reworded, more RS references |
+| T2 Validation | 16 | 4 | Two form verdicts changed (P015, P017), two reasons reworded |
+| T3 Gherkin | 9 | 11 | Reference features rewritten, acceptance checks rewritten |
+
+These are the lessons for drafting batches 2 to 8:
+
+- **T1: lead with what the rule constrains.** "A timesheet may be approved only by a team lead" (P003) and "The number of people occupying a hotel room must not exceed 3" (P016) put the governed thing or quantity first. RS-17 (precise terms) was added to four of the five corrections, so drafts should cite it whenever a term is chosen.
+- **T1: ask when the business rule itself is unclear.** System-phrased intent with open questions about scope, counting and duration (P015) is an ask, even if a plausible draft exists. Any draft statement kept on an ask case is illustrative only.
+- **T1: name the domain term.** P002 uses "shipment" for what is sent. Joel noted that the term should be confirmed if the vocabulary is closed, so `shipment` was added to that case's vocabulary.
+- **T2: a vague term does not make the form undetermined.** P017 ("in a timely manner") conforms in form, with the vague term flagged for clarification. The checker already said this, so the draft label was wrong.
+- **T2: must plus only is a revision, not an open question.** P015 needs revision, because both keywords are operative and the author must say which policy is meant.
+- **T3: test both sides of every boundary, tightly.** For example 59:59 against 60:01 minutes, $500 against $500.01, and 14:59 against 15:01. Drafts used one-minute or whole-unit gaps.
+- **T3: add nothing beyond the acceptance criteria.** The P008 draft assumed a notification, and Joel removed it. He added the pending state that the criteria do state.
+- **T3: one behaviour per scenario, in domain terms.** Outlines whose rows differ in kind became separate scenarios (P007, P009). Implementation details gave way to the outcome, such as "a second factor" instead of "a one-time code" (P012). Steps describe the triggering event, not a batch job (P018, P020). The `Rule:` keyword was dropped where it added nothing (P016).
+
+T3 drafting is the weak spot, with only 45% of drafts agreed. Batch 2 applies these rules before it goes to Joel.
 
 ## Open points
 

@@ -14,7 +14,7 @@ The checkers decide everything they can decide, so the model only does the work 
 | T2 RuleSpeak validation | Settles the form verdict where the checker found a review item or couldn't match a template | Runs first. Its findings are the evidence in the prompt and the findings in the output |
 | T3 Gherkin requirements | Writes the feature, maps the criteria to scenarios, or asks about a vague criterion | Applies the Gherkin profile and checks that every criterion is covered |
 
-The baseline B0 result ([evaluation.md](evaluation.md#b0-deterministic-checker-only-on-t2-2026-11-24)) shows where T2 needs the model. All five of the checker's misses are review items that only a judgement call can settle.
+The baseline B0 result ([evaluation.md](evaluation.md#b0-deterministic-checker-only-on-t2-2026-11-24-expert-labels)) shows where T2 needs the model. All five of the checker's misses are review items that only a judgement call can settle.
 
 ## How a run works
 
@@ -92,7 +92,7 @@ Licences come from the vendors' announcements and need checking against each mod
 4. **Decide.** For each task, choose the smallest model that meets the gate targets on the held-out split ([config/gate.yaml](../config/gate.yaml)). Compare it with the LLM baseline using the paired McNemar test in `eval compare`. The cost target is 20% of the LLM baseline's cost per request.
 5. **Escalate.** A task with no passing candidate goes to fine-tuning. The best candidate becomes the base model, and the 0.5 readiness verdict says whether that is possible now.
 
-The final choice needs labelled held-out cases. Screening and prompt work can start on the draft pilot labels, but their results are provisional until Joel has labelled the cases.
+The final choice needs labelled held-out cases. The 60 pilot cases now carry Joel's labels, so screening results on the pilot are real but small-sample. They are all dev cases, so the final choice still waits for the held-out split.
 
 ## LLM baseline
 

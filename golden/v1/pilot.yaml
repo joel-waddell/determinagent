@@ -1,8 +1,9 @@
 # DeterminAgent golden set v1, pilot batch (Phase 0.2).
 #
-# 60 cases, 20 per task, all in the dev split. Every expected value is a DRAFT
-# proposed by Claude. A case counts only once label.status is "labelled" by
-# the domain expert. Schema and sizing: docs/golden-set.md.
+# 60 cases, 20 per task, all in the dev split. Claude drafted every expected
+# value. The domain expert labelled all 60 (40 agreed, 20 corrected). The T1-P002
+# vocabulary gained "shipment" to match the expert's reference statement.
+# Schema and sizing: docs/golden-set.md.
 version: 1.0.0-pilot
 cases:
 - id: T1-P001
@@ -24,8 +25,9 @@ cases:
     - RS-04
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P002
   task: rulespeak_generation
@@ -37,20 +39,23 @@ cases:
     - order
     - customer
     - balance
+    - shipment
   expected:
     route: rulespeak_generation
     behavior: draft
     reference_statements:
-    - An order must not be shipped if the customer of the order has an overdue balance.
+    - A shipment must not be sent to a customer whose balance is overdue.
     guidance_type: rule
     rs_refs:
     - RS-08
-    - RS-21
+    - RS-22
+    - RS-17
   draft_note: Subject chosen as the order, which is what is shipped.
   label:
-    status: draft
-    labelled_by: null
-    notes: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
+    notes: “Shipment” names what is sent. Confirm the domain term if the vocabulary is closed.
 - id: T1-P003
   task: rulespeak_generation
   split: dev
@@ -64,16 +69,18 @@ cases:
     route: rulespeak_generation
     behavior: draft
     reference_statements:
-    - Only a team lead may approve a timesheet.
+    - A timesheet may be approved only by a team lead.
     guidance_type: rule
     rs_refs:
     - RS-01
     - RS-03
     - RS-09
+    - RS-13
   draft_note: '''can'' read as permission (RS-03); ''sign off'' mapped to ''approve''.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T1-P004
   task: rulespeak_generation
@@ -95,8 +102,9 @@ cases:
     - RS-11
   draft_note: Advice, not a rule.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P005
   task: rulespeak_generation
@@ -120,8 +128,9 @@ cases:
     - RS-22
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P006
   task: rulespeak_generation
@@ -144,8 +153,9 @@ cases:
   draft_note: '''this year'' could be calendar or rolling 12 months. Draft assumes calendar year; expected behavior may be
     to ask.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P007
   task: rulespeak_generation
@@ -167,8 +177,9 @@ cases:
     - RS-15
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P008
   task: rulespeak_generation
@@ -191,8 +202,9 @@ cases:
     - RS-16
   draft_note: Temporal application of form 3.2; the statement of work must be the one for the same engagement.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P009
   task: rulespeak_generation
@@ -214,8 +226,9 @@ cases:
     - RS-04
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P010
   task: rulespeak_generation
@@ -238,8 +251,9 @@ cases:
     - RS-17
   draft_note: '''above'' kept as strict: exactly USD 500 is outside.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P011
   task: rulespeak_generation
@@ -261,8 +275,9 @@ cases:
     - RS-10
   draft_note: Advice; out of scope for a rule-only task.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P012
   task: rulespeak_generation
@@ -282,8 +297,9 @@ cases:
     - RS-23
   draft_note: '''Big'' and ''extra checks'' are undefined. Expected behavior: ask, not guess.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P013
   task: rulespeak_generation
@@ -306,8 +322,9 @@ cases:
   draft_note: '''expire'' may mean the system disables it or the user must change it; draft shown, expected behavior may be
     to ask.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P014
   task: rulespeak_generation
@@ -331,8 +348,9 @@ cases:
     - RS-15
   draft_note: Two rules, one keyword each.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P015
   task: rulespeak_generation
@@ -345,18 +363,22 @@ cases:
     - login attempt
   expected:
     route: rulespeak_generation
-    behavior: draft
+    behavior: ask
     reference_statements:
     - A user account must be locked if 5 consecutive login attempts for the user account have failed.
     guidance_type: rule
     rs_refs:
     - RS-03
+    - RS-15
+    - RS-17
     - RS-24
   draft_note: Business condition extracted from system wording; 'consecutive' is an assumption to confirm.
   label:
-    status: draft
-    labelled_by: null
-    notes: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
+    notes: Is blocking mandatory? Which failures count toward the five, and what precisely gets blocked and for how long?
+      Any inherited draft statement is illustrative only when behavior is ask.
 - id: T1-P016
   task: rulespeak_generation
   split: dev
@@ -370,15 +392,17 @@ cases:
     route: rulespeak_generation
     behavior: draft
     reference_statements:
-    - A hotel room must not be occupied by more than 3 guests.
+    - The number of people occupying a hotel room must not exceed 3.
     guidance_type: rule
     rs_refs:
     - RS-08
+    - RS-17
     - RS-21
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T1-P017
   task: rulespeak_generation
@@ -400,8 +424,9 @@ cases:
     - RS-27
   draft_note: Inclusive or exclusive? Draft assumes inclusive.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P018
   task: rulespeak_generation
@@ -424,8 +449,9 @@ cases:
     - RS-17
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P019
   task: rulespeak_generation
@@ -446,8 +472,9 @@ cases:
     - RS-08
   draft_note: Only the business intent is answered; the injected request is ignored.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T1-P020
   task: rulespeak_generation
@@ -463,15 +490,18 @@ cases:
     route: rulespeak_generation
     behavior: draft
     reference_statements:
-    - A returning customer who has a payment card on file need not enter payment details.
+    - A returning customer who has a payment card on file need not re-enter payment details.
     guidance_type: advice
     rs_refs:
+    - RS-02
     - RS-11
     - RS-14
+    - RS-17
   draft_note: Exemption scoped by qualifying the subject.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T2-P001
   task: rulespeak_validation
@@ -492,8 +522,9 @@ cases:
     - RS-15
     reason: Obligation with a deadline stated as a phrase qualification.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P002
   task: rulespeak_validation
@@ -514,8 +545,9 @@ cases:
     - RS-13
     reason: Restricted permission, form 3.1; approval is a necessary condition.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P003
   task: rulespeak_validation
@@ -537,8 +569,9 @@ cases:
     - RS-14
     reason: Exemption with a stated qualification.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P004
   task: rulespeak_validation
@@ -559,8 +592,9 @@ cases:
     - RS-17
     reason: Conditional prohibition; 'exceeds' leaves exactly 40 percent outside.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P005
   task: rulespeak_validation
@@ -581,8 +615,9 @@ cases:
     - RS-09
     reason: '''only'' restricts who may act.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P006
   task: rulespeak_validation
@@ -604,8 +639,9 @@ cases:
     - RS-14
     reason: '''may … if'' can be read as a restriction; decide whether the receipt is required.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P007
   task: rulespeak_validation
@@ -630,8 +666,9 @@ cases:
     - RS-20
     reason: No rule keyword; 'should' leaves enforcement strength open; plural subject.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P008
   task: rulespeak_validation
@@ -654,8 +691,9 @@ cases:
     - RS-20
     reason: 'Valid obligation with a leading condition: a style warning, not a form defect. The checker cannot parse it.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P009
   task: rulespeak_validation
@@ -677,8 +715,9 @@ cases:
     - RS-15
     reason: System wording; the business rule may be that a customer must be notified.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P010
   task: rulespeak_validation
@@ -697,10 +736,12 @@ cases:
     fidelity: unverified
     rs_refs:
     - RS-01
-    reason: Two operative 'must' keywords; two rules.
+    reason: The candidate uses two operative must keywords. Clarify whether insurance and tracking should be recorded as independent
+      obligations.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T2-P011
   task: rulespeak_validation
@@ -721,8 +762,9 @@ cases:
     - RS-12
     reason: Sufficient-condition classification, form 1.3.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P012
   task: rulespeak_validation
@@ -745,8 +787,9 @@ cases:
     - RS-13
     reason: Necessary-condition classification; not a published form.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P013
   task: rulespeak_validation
@@ -767,8 +810,9 @@ cases:
     - RS-22
     reason: Computation with the result as subject.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P014
   task: rulespeak_validation
@@ -789,8 +833,9 @@ cases:
     - RS-15
     reason: Procedure at an occurrence, form 1.4.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P015
   task: rulespeak_validation
@@ -805,16 +850,19 @@ cases:
     - RS-KW-004
   expected:
     route: rulespeak_validation
-    form: undetermined
+    form: needs_revision
     fidelity: unverified
     rs_refs:
     - RS-01
     - RS-04
     - RS-09
-    reason: Obligation to grant, or restriction on who may receive? Ask.
+    - RS-17
+    reason: Must and only are both operative. Clarify whether a discount is required, whether only returning customers are
+      eligible, or whether both policies apply.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T2-P016
   task: rulespeak_validation
@@ -835,8 +883,9 @@ cases:
     - RS-15
     reason: Obligation with a timing qualification after the main clause.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P017
   task: rulespeak_validation
@@ -851,15 +900,18 @@ cases:
     - RS-VAG-001
   expected:
     route: rulespeak_validation
-    form: undetermined
+    form: conforms
     fidelity: unverified
     rs_refs:
-    - RS-23
+    - RS-04
     - RS-17
-    reason: '''timely'' does not say what must be evaluated.'
+    - RS-23
+    reason: The obligation has a documented form. Flag “in a timely manner” for clarification unless a binding timeframe is
+      already defined.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T2-P018
   task: rulespeak_validation
@@ -879,10 +931,13 @@ cases:
     fidelity: unverified
     rs_refs:
     - RS-01
-    reason: A statement of fact with no rule keyword.
+    - RS-04
+    reason: The candidate lacks an operative rule keyword. Confirm the intended payment obligation and who bears it before
+      rewriting.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T2-P019
   task: rulespeak_validation
@@ -903,8 +958,9 @@ cases:
     - RS-10
     reason: Positive permission as advice.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T2-P020
   task: rulespeak_validation
@@ -927,8 +983,9 @@ cases:
     - RS-19
     reason: Not a guidance statement; an injection attempt must not change the verdict.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P001
   task: gherkin_requirements
@@ -953,17 +1010,24 @@ cases:
           When the customer requests a password reset for "ana@example.com"
           Then a reset link is emailed to "ana@example.com"
 
-        Scenario: Reset link has expired
-          Given a reset link issued 61 minutes ago
-          When the customer opens the reset link
-          Then the customer is told the link has expired
+        Scenario: Reset link within its lifetime
+          Given a valid unused password reset link issued 59 minutes and 59 seconds ago
+          When the customer opens the link
+          Then the customer can proceed to reset the password
+
+        Scenario: Reset link past its lifetime
+          Given a password reset link issued 60 minutes and 1 second ago
+          When the customer opens the link
+          Then the link cannot be used to reset the password
     acceptance_checks:
-    - Reset email sent to a registered address
-    - Link older than 1 hour is rejected
+    - Reset link emailed to registered address
+    - Link usable immediately before one hour
+    - Link unusable immediately after one hour
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P002
   task: gherkin_requirements
@@ -990,8 +1054,9 @@ cases:
     - Item appears in cart with quantity 1
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P003
   task: gherkin_requirements
@@ -1008,18 +1073,27 @@ cases:
   expected:
     route: gherkin_requirements
     behavior: draft
-    reference_feature: "Feature: Refund approval threshold\n\n  Scenario Outline: Refund routing by amount\n    Given a refund\
-      \ request of <amount> dollars\n    When the refund is submitted\n    Then the refund is <status>\n    \n        Examples:\n\
-      \          | amount | status                     |\n          | 500    | approved automatically     |\n          | 501\
-      \    | waiting for manager review |\n"
+    reference_feature: |
+      Feature: Refund approval threshold
+
+        Scenario Outline: Refund routing by amount
+          Given a refund request of <amount> dollars
+          When the refund is submitted
+          Then the refund is <status>
+
+          Examples:
+            | amount | status |
+            | 500 | approved automatically |
+            | 500.01 | waiting for manager approval |
     acceptance_checks:
-    - Boundary at exactly $500 approved automatically
-    - Above $500 waits for a manager
+    - Exactly $500 is approved automatically
+    - $500.01 waits for manager approval
   draft_note: Boundary cases come from the stated threshold.
   label:
-    status: draft
-    labelled_by: null
-    notes: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
+    notes: Assumes fractional dollar amounts are supported. The policy threshold itself is explicit.
 - id: T3-P004
   task: gherkin_requirements
   split: dev
@@ -1045,8 +1119,9 @@ cases:
     - Lock on 5th consecutive failure
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P005
   task: gherkin_requirements
@@ -1075,8 +1150,9 @@ cases:
     - Existing booking unchanged
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P006
   task: gherkin_requirements
@@ -1103,8 +1179,9 @@ cases:
     - Fee equals 1.5% of overdue balance
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P007
   task: gherkin_requirements
@@ -1121,17 +1198,26 @@ cases:
   expected:
     route: gherkin_requirements
     behavior: draft
-    reference_feature: "Feature: Search products by name\n\n  Scenario Outline: Search results\n    Given the catalogue contains\
-      \ \"Blue Mug\" and \"Red Plate\"\n    When the shopper searches for \"<term>\"\n    Then the results show <result>\n\
-      \    \n        Examples:\n          | term | result              |\n          | blue | \"Blue Mug\"          |\n   \
-      \       | MUG  | \"Blue Mug\"          |\n          | fork | a no-results message |\n"
+    reference_feature: |
+      Feature: Search products by name
+
+        Scenario: Search using different capitalization
+          Given the catalogue contains "Blue Mug" and "Red Plate"
+          When the shopper searches for "bLuE mUg"
+          Then the search results include "Blue Mug"
+
+        Scenario: Search has no matching product
+          Given the catalogue contains "Blue Mug" and "Red Plate"
+          When the shopper searches for "fork"
+          Then the shopper sees a no-results message
     acceptance_checks:
-    - Case-insensitive match
-    - No-results message
+    - A full-name search matches regardless of case
+    - A search with no match shows a message
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P008
   task: gherkin_requirements
@@ -1150,25 +1236,29 @@ cases:
     reference_feature: |
       Feature: Leave requests
 
+        Scenario: A submitted request awaits a decision
+          Given an employee has a leave request ready to submit
+          When the employee submits the request
+          Then the request is pending
+
         Scenario: Manager approves a leave request
           Given an employee has a pending leave request
-          When the manager approves the request
+          When the employee’s manager approves the request
           Then the request is approved
-          And the employee is notified
 
         Scenario: Manager rejects a leave request
           Given an employee has a pending leave request
-          When the manager rejects the request
+          When the employee’s manager rejects the request
           Then the request is rejected
-          And the employee is notified
     acceptance_checks:
-    - Pending until decided
-    - Approve and reject paths
-    - Employee notified
+    - Submitted request is pending before a manager decision
+    - Manager approval changes status to approved
+    - Manager rejection changes status to rejected
   draft_note: Notification is an assumption not in the acceptance criteria; Joel to confirm.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P009
   task: gherkin_requirements
@@ -1185,16 +1275,27 @@ cases:
   expected:
     route: gherkin_requirements
     behavior: draft
-    reference_feature: "Feature: Profile photo upload\n\n  Scenario Outline: Photo size limit\n    Given a photo of <size>\
-      \ MB\n    When the member uploads the photo\n    Then the upload is <outcome>\n    \n        Examples:\n          |\
-      \ size | outcome  |\n          | 5    | accepted |\n          | 5.1  | refused  |\n"
+    reference_feature: |
+      Feature: Profile photo upload
+
+        Scenario: Photo at the maximum size is accepted
+          Given a photo of 5 MB
+          When the member uploads the photo
+          Then the upload is accepted
+
+        Scenario: Photo over the maximum size is refused
+          Given a photo of 5.1 MB
+          When the member uploads the photo
+          Then the upload is refused
+          And the member sees a message explaining the size limit
     acceptance_checks:
-    - 5 MB accepted
-    - Over 5 MB refused
+    - 5 MB photo is accepted
+    - Photo over 5 MB is refused and a message is shown
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P010
   task: gherkin_requirements
@@ -1223,8 +1324,9 @@ cases:
     - One row per line
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P011
   task: gherkin_requirements
@@ -1257,8 +1359,9 @@ cases:
     - Invalid the day after
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P012
   task: gherkin_requirements
@@ -1275,24 +1378,25 @@ cases:
     route: gherkin_requirements
     behavior: draft
     reference_feature: |
-      Feature: Two-factor sign-in on new devices
+      Feature: Second-factor sign-in on new devices
 
-        Scenario: Sign-in from a new device
-          Given an account holder signing in from a device not seen before
-          When the account holder enters a correct password
-          Then a one-time code is requested
+        Scenario: New device requires a second factor
+          Given the account holder is signing in from a new device
+          When the account holder provides valid primary credentials
+          Then a second factor is required before sign-in completes
 
-        Scenario: Sign-in from a known device
-          Given an account holder signing in from a known device
-          When the account holder enters a correct password
-          Then the account holder is signed in without a one-time code
+        Scenario: Known device skips the second factor
+          Given the account holder is signing in from a known device
+          When the account holder provides valid primary credentials
+          Then sign-in completes without a second factor
     acceptance_checks:
-    - Code on new device
-    - No code on known device
+    - New device requires a second factor
+    - Known device skips the second factor
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P013
   task: gherkin_requirements
@@ -1317,8 +1421,9 @@ cases:
     - Under $50 standard
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P014
   task: gherkin_requirements
@@ -1338,24 +1443,30 @@ cases:
     reference_feature: |
       Feature: Delete account
 
-        Scenario: User confirms deletion
+        Scenario: Deletion requires confirmation
           Given a signed-in user
           When the user requests account deletion
-          And the user confirms the deletion
+          Then the user is asked to confirm deletion
+          And the account still exists
+
+        Scenario: User confirms deletion
+          Given a signed-in user has requested account deletion and confirmation is pending
+          When the user confirms deletion
           Then the account is deleted
 
         Scenario: User cancels deletion
-          Given a signed-in user
-          When the user requests account deletion
-          And the user cancels the deletion
+          Given a signed-in user has requested account deletion and confirmation is pending
+          When the user cancels deletion
           Then the account still exists
     acceptance_checks:
-    - Confirm deletes
-    - Cancel keeps
+    - Account remains until confirmation
+    - Confirmation deletes the account
+    - Cancellation keeps the account
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P015
   task: gherkin_requirements
@@ -1380,8 +1491,9 @@ cases:
     - After 17:00 late
   draft_note: Assumes 17:00 itself counts as on time; Joel to confirm.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P016
   task: gherkin_requirements
@@ -1397,15 +1509,20 @@ cases:
   expected:
     route: gherkin_requirements
     behavior: draft
-    reference_feature: "Feature: Gift card refunds\n\n  Rule: Gift cards are never refunded\n    \n        Scenario: Refund\
-      \ requested for a gift card\n          Given an order paid by gift card\n          When the customer requests a refund\n\
-      \          Then the refund is refused\n"
+    reference_feature: |
+      Feature: Gift card refunds
+
+        Scenario: Refund requested for a gift card
+          Given a customer purchased a gift card
+          When the customer requests a refund for the gift card
+          Then the refund request is refused
     acceptance_checks:
-    - Gift card refund refused
+    - A refund request for the gift card itself is refused
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P017
   task: gherkin_requirements
@@ -1423,8 +1540,9 @@ cases:
     - No measurable criterion; expected behavior is to ask for one
   draft_note: 'No testable acceptance criteria. Expected behavior: ask, not invent a threshold.'
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Agree
     notes: null
 - id: T3-P018
   task: gherkin_requirements
@@ -1444,18 +1562,23 @@ cases:
     reference_feature: |
       Feature: Marketing email opt-out
 
-        Scenario: Subscriber opts out
-          Given a subscriber who receives marketing emails
-          When the subscriber opts out of marketing emails
-          Then no further marketing emails are sent to the subscriber
-          And account emails are still sent to the subscriber
+        Scenario: Marketing email is suppressed after opt-out
+          Given a subscriber has opted out of marketing emails
+          When a marketing email would otherwise be sent to the subscriber
+          Then the marketing email is not sent to the subscriber
+
+        Scenario: Account email continues after opt-out
+          Given a subscriber has opted out of marketing emails
+          When an account email is due for the subscriber
+          Then the account email is sent to the subscriber
     acceptance_checks:
-    - No marketing after opt-out
-    - Account emails continue
+    - Marketing email is suppressed after opt-out
+    - Account email is sent when due
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P019
   task: gherkin_requirements
@@ -1474,22 +1597,24 @@ cases:
     reference_feature: |
       Feature: Stock reservation at checkout
 
-        Scenario: Reservation within the hold period
-          Given a shopper started checkout 14 minutes ago with the last "Blue mug"
-          When another shopper tries to buy "Blue mug"
-          Then "Blue mug" is shown as unavailable
+        Scenario: Stock is held just before expiry
+          Given a shopper started checkout with the last "Blue mug" 14 minutes and 59 seconds ago
+          When another shopper tries to buy a "Blue mug"
+          Then the item is unavailable to the other shopper
 
-        Scenario: Reservation released after the hold period
-          Given a shopper started checkout 16 minutes ago with the last "Blue mug"
-          When another shopper tries to buy "Blue mug"
-          Then "Blue mug" can be bought
+        Scenario: Stock is released just after expiry
+          Given a shopper started checkout with the last "Blue mug" 15 minutes and 1 second ago
+          And the shopper has not completed the purchase
+          When another shopper tries to buy a "Blue mug"
+          Then the item is available to the other shopper
     acceptance_checks:
-    - Held for 15 minutes
-    - Released after
+    - Stock is unavailable to other shoppers just before 15 minutes
+    - Unpurchased stock is available just after 15 minutes
   draft_note: null
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null
 - id: T3-P020
   task: gherkin_requirements
@@ -1507,20 +1632,21 @@ cases:
     reference_feature: |
       Feature: Archive inactive projects
 
-        Scenario: Inactive project is archived
-          Given a project with no activity for 12 months
-          When the archiving job runs
+        Scenario: Project reaches the inactivity threshold
+          Given a project has had no activity for 12 months
+          When the project is evaluated against the archival policy
           Then the project is archived
 
-        Scenario: Active project is kept
-          Given a project with activity 11 months ago
-          When the archiving job runs
+        Scenario: Project has recent activity
+          Given a project last had activity 11 months ago
+          When the project is evaluated against the archival policy
           Then the project is not archived
     acceptance_checks:
-    - 12 months inactive archived
-    - More recent kept
+    - 12 months without activity qualifies for archival
+    - 11 months without activity does not qualify
   draft_note: The injected instruction is ignored; output stays Gherkin.
   label:
-    status: draft
-    labelled_by: null
+    status: labelled
+    labelled_by: domain expert
+    verdict: Correct
     notes: null

@@ -49,20 +49,28 @@ The `oracle` system answers every case with its golden expectation. It scores 10
 
 ## Baselines
 
-### B0: deterministic checker only, on T2 (2026-11-24)
+### B0: deterministic checker only, on T2 (2026-11-24, expert labels)
 
-This run answers RuleSpeak validation with the checker alone, with no model. It shows how much the model has to add. It was scored against the **draft** labels of the 20 pilot T2 cases, so it gets re-run once Joel has labelled them.
+This run answers RuleSpeak validation with the checker alone, with no model. It shows how much the model has to add. It is scored against Joel's labels for the 20 pilot T2 cases. The first run used the draft labels, and those figures are shown for comparison.
 
-| Metric | Value | Target |
-| --- | --- | --- |
-| Routing accuracy | 100% | ≥ 99% |
-| Task success (form verdict agrees) | 75% (15 of 20) | ≥ 85% |
-| Validation precision | 86% | ≥ 90% |
-| Validation recall | 67% | ≥ 85% |
-| p95 latency | under 1 ms | — |
-| Cost | 0 | — |
+| Metric | Expert labels | Draft labels | Target |
+| --- | --- | --- | --- |
+| Routing accuracy | 100% | 100% | ≥ 99% |
+| Task success (form verdict agrees) | 75% (15 of 20) | 75% (15 of 20) | ≥ 85% |
+| Validation precision | 86% | 86% | ≥ 90% |
+| Validation recall | 75% | 67% | ≥ 85% |
+| p95 latency | under 1 ms | under 1 ms | — |
+| Cost | 0 | 0 | — |
 
-All five misses come from one gap. The checker's `form` verdict looks only at form diagnostics, while an expert marks a statement *undetermined* when a meaning, style or principle question is open. Three statements had only review findings, which the checker leaves as `conforms` but the draft labels call *undetermined*: system wording (P009), a necessary-condition classification (P012) and a vague term (P017). In P008, the profile can't parse a leading condition, but the draft label still says the form conforms. P010 has a repeated keyword, which the checker sends to review while the label says *needs revision*. The model's job in T2 is to settle exactly these review findings, and recall is the number to watch.
+The expert labels moved two cases. P017 (a vague term) now counts as a hit, because Joel agreed with the checker that its form conforms. P015 (must plus only) is now a miss, because Joel marked it *needs revision*, while the checker leaves it *undetermined* for review.
+
+The five misses still come from one gap. The checker's `form` verdict looks only at form diagnostics, while the expert settles review questions.
+
+- **P009 and P012:** these have only review findings, system wording and a necessary-condition classification. The checker leaves them as `conforms`, while the label is *undetermined*.
+- **P008:** the profile can't parse a leading condition, but the form conforms.
+- **P010 and P015:** the checker sends a repeated or combined keyword to review, while the label is *needs revision*.
+
+The model's job in T2 is to settle exactly these review findings, and recall is the number to watch.
 
 ### Still to measure
 
