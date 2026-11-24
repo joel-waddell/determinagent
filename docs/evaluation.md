@@ -12,7 +12,7 @@ A run is a JSON Lines file with one record per golden case:
  "first_pass_wellformed": true, "system": "qwen-2.5-3b-prompt-v1"}
 ```
 
-`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure. Model runs from `eval run` also record `prompt_version`, `input_tokens`, `output_tokens` and, when retries ran out, the last `problems` ([slm-strategy.md](slm-strategy.md#how-a-run-works)).
+`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure. Model runs from `eval run` also record `prompt_version`, `input_tokens`, `output_tokens` and, when retries ran out, the last `problems` and the model's `last_reply` (up to 4,000 characters) ([slm-strategy.md](slm-strategy.md#how-a-run-works)).
 
 ## How a case is scored
 
@@ -72,12 +72,14 @@ The five misses still come from one gap. The checker's `form` verdict looks only
 
 The model's job in T2 is to settle exactly these review findings, and recall is the number to watch.
 
+### Screen 1: small models on the pilot (2026-11-24)
+
+Seven open models ran on a free Colab GPU. On T2, Qwen3 8B gets 85% success, 88% precision and 88% recall, against the checker's 75%, 86% and 75%. The T3 results were void because of a runner fault, which is now fixed. Full results are in [slm-strategy.md](slm-strategy.md#screen-1-results-2026-11-24).
+
 ### Still to measure
 
-- **LLM baseline:** a general-purpose LLM on all three tasks, for the quality and cost comparison.
-- **SLM candidates:** off-the-shelf small models with prompt optimization (0.4).
-
-The runner, adapters and prompts for both are built ([slm-strategy.md](slm-strategy.md)). What is missing is model access, which is the open question for Joel in 0.4 and 0.5.
+- **LLM baseline:** a general-purpose LLM on all three tasks, for the quality and cost comparison. It needs an API key and a cap.
+- **SLM screen 2:** the T3 re-run and prompt optimization (0.4).
 
 ## J2 JavaScript generation (Amendment 1)
 

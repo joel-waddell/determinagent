@@ -22,7 +22,7 @@ The baseline B0 result ([evaluation.md](evaluation.md#b0-deterministic-checker-o
 
 1. It builds the v1 request for the case (`golden.to_request`).
 2. It renders the task prompt from `src/determinagent/prompts/v1/`. The template list, keywords, word limit and lexicon examples are rendered from the profile files, so the prompt can't drift from the checker.
-3. It asks the model for a reply that matches the task's reply schema (`eval/runner.py`, `REPLY_SCHEMAS`). The backend constrains decoding to that schema where it can: `response_format` with `json_schema` for OpenAI-style servers (Ollama, vLLM, llama.cpp server) and `output_config.format` for Claude.
+3. It asks the model for a reply that matches the task's reply schema. For Gherkin, the reply gives the feature's parts, and the runner writes the file (`eval/runner.py`, `REPLY_SCHEMAS`). The backend constrains decoding to that schema where it can: `response_format` with `json_schema` for OpenAI-style servers (Ollama, vLLM, llama.cpp server) and `output_config.format` for Claude.
 4. It checks the reply against the schema and the checkers. If the reply fails, it sends the reply back with the findings, up to two times.
 5. It writes a v1 response. Possible outcomes are `resolved`, `violated` (with `OUTPUT_SCHEMA_INVALID` or `OUTPUT_NONCONFORMANT` once retries run out) and `rejected` (with `MODEL_ERROR`). The record also logs the attempt count, whether the first reply passed, tokens, latency and cost.
 
@@ -93,6 +93,37 @@ Licences come from the vendors' announcements and need checking against each mod
 5. **Escalate.** A task with no passing candidate goes to fine-tuning. The best candidate becomes the base model, and the 0.5 readiness verdict says whether that is possible now.
 
 The final choice needs labelled held-out cases. The 60 pilot cases now carry Joel's labels, so screening results on the pilot are real but small-sample. They are all dev cases, so the final choice still waits for the held-out split.
+
+## Screen 1 results (2026-11-24)
+
+Joel ran the notebook on a free Colab T4 over the 60 pilot cases. It covered 7 models with prompts v1 1.0.0, temperature 0 and two retries. The scores below are re-scored against Joel's labels and are small-sample: 20 cases per task, all dev.
+
+| Model | T1 generation | T2 validation (precision / recall) | T3 Gherkin | p95 latency (T1 / T2) |
+| --- | --- | --- | --- | --- |
+| Qwen3 8B | **75%** | **85%** (88% / 88%) | 0% | 12 s / 6 s |
+| Qwen3 4B | 65% | **85%** (86% / 75%) | 0% | 9 s / 7 s |
+| Qwen3 1.7B | 5% | 80% (83% / 62%) | 0% | 13 s / 3 s |
+| Phi-4-mini 3.8B | 55% | 0% | 0% | 14 s / 99 s |
+| Qwen3 0.6B | 40% | 35% (86% / 75%) | 0% | 6 s / 2 s |
+| SmolLM2 360M | 0% | 5% | 0% | 35 s / 32 s |
+| Gemma 3 270M | 0% | 5% | 0% | 19 s / 13 s |
+| Checker only (B0) | — | 75% (86% / 75%) | — | under 1 ms |
+
+**T2: the model adds value.** Qwen3 8B gets 85% against the checker's 75%, and it reaches the 85% target for success and recall. Precision is 88% against a 90% target. Qwen3 8B and 4B fix the two cases where the checker leaves a keyword question open (P010, P015). Both still miss the same three: P008, P009 and P012. In those, the checker's verdict and the expert's differ on whether a review finding makes the form undetermined, which is a prompt and worked-example target for step 3.
+
+**T1: every miss by the top two models is a failure to ask.** Qwen3 8B's five misses are the five pilot cases whose expected behavior is *ask*, and Qwen3 4B misses the same five plus two. The models draft a plausible statement when the intent leaves a decision open. Prompt optimization should start there. T1 success is still an upper bound until the rubric exists.
+
+**T3: a runner fault, not a model result.** No model passed any Gherkin case. Almost every feature that came back failed in the same way: the text starts with the user story instead of a `Feature:` line, so the official parser rejects it at line 1, and the retries didn't fix it. The reply asked the model to write the whole Gherkin file as one string. From prompt 1.1.0, the model fills in parts instead: a feature name and scenarios made of a keyword, the step text and an Examples table. The runner writes the Gherkin text, so keywords, indentation and tables are right by construction. T3 needs a re-run before it says anything about the models.
+
+**Other faults found:**
+
+- **RS ids copied with their index text.** Qwen3 1.7B wrote ids like "RS-04 form: ..." in 16 of 20 T1 cases, and they were rejected as unknown ids. The runner now keeps only the leading id, which is a deterministic clean-up. Its T1 score should be read after the re-run.
+- **Truncated replies and server errors.** Phi-4-mini, SmolLM2 and Gemma 3 often stopped mid-string, and Ollama returned HTTP 500 for all 20 Phi-4-mini Gherkin cases. The likeliest cause is Ollama's default context window, which a retry with feedback outgrows. The notebook now starts Ollama with `OLLAMA_CONTEXT_LENGTH=8192`. This is unconfirmed, because the runs did not keep the replies.
+- **Failed replies are now kept.** A record whose retries ran out now keeps `last_reply` (up to 4,000 characters), so the next fault can be read directly.
+
+**Cut, provisionally.** Qwen3 8B and 4B go forward on all three tasks. Qwen3 1.7B goes forward for T2, where it is within 5 points of the best, and is re-checked on T1 after the id fix. The sub-1B models are out, except that Qwen3 0.6B keeps a place as a fine-tuning candidate if fine-tuning is needed. It is the only floor-tier model that produced valid output, but it is more than 10 points behind. Phi-4-mini is held until the context fix is re-run. The Gemma 4, Ministral 3, Granite 4.1 and SmolLM3 tags still need checking, so they have not been screened.
+
+**Next run:** the same notebook from main once the fixes merge, with all three tasks for Qwen3 8B, 4B and 1.7B and Phi-4-mini. Keep the screen 1 run files for comparison.
 
 ## LLM baseline
 
