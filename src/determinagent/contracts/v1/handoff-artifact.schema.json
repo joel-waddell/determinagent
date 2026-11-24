@@ -9,14 +9,15 @@
   "properties": {
     "schema_version": { "const": "1.0" },
     "artifact_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
-    "artifact_type": { "enum": ["rulespeak_rule", "rulespeak_advice", "gherkin_feature"] },
-    "content": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/long_text" },
+    "artifact_type": { "enum": ["rulespeak_rule", "rulespeak_advice", "gherkin_feature", "js_module"] },
+    "content": { "type": "string", "minLength": 1, "maxLength": 20000, "description": "At most 4,000 characters, except a js_module (code_text)." },
     "template_id": { "type": "string", "pattern": "^RS-T[0-9]{2}b?$" },
     "trace": { "type": "array", "items": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/trace_entry" } },
     "source_request_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
     "receipt_head": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/sha256" },
     "produced_at": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/timestamp" },
     "profile_version": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" },
+    "execution": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_execution" },
     "checker": {
       "type": "object",
       "additionalProperties": false,
@@ -28,5 +29,12 @@
         "codes": { "type": "array", "items": { "type": "string" } }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "artifact_type": { "const": "js_module" } } },
+      "then": { "properties": { "content": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/code_text" } }, "required": ["execution"] },
+      "else": { "properties": { "content": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/long_text" } }, "not": { "required": ["execution"] } }
+    }
+  ]
 }

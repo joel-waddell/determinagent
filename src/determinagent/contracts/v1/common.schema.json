@@ -8,8 +8,8 @@
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
     },
     "task": {
-      "description": "The three POC tasks. The router's target and the golden set's expected route.",
-      "enum": ["rulespeak_generation", "rulespeak_validation", "gherkin_requirements"]
+      "description": "The POC tasks: the router's target and the golden set's expected route. The js_ tasks are J1 advise, J2 generate and J3 correct; J2 ships first.",
+      "enum": ["rulespeak_generation", "rulespeak_validation", "gherkin_requirements", "js_advice", "js_generation", "js_correction"]
     },
     "short_text": { "type": "string", "minLength": 1, "maxLength": 500 },
     "long_text": { "type": "string", "minLength": 1, "maxLength": 4000 },
@@ -242,6 +242,546 @@
       "anyOf": [{ "required": ["feature"] }, { "properties": { "questions": { "minItems": 1 } } }]
     },
 
+    "js_identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_$][A-Za-z0-9_$]{0,63}$"
+    },
+    "js_type": {
+      "description": "A JSDoc type expression, such as number, string[] or {id: string, qty: number}.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "code_text": {
+      "description": "JavaScript source. About 200 lines at most (the JS profile's scope).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "js_source": {
+      "description": "One ES module (ES2022+, Node 20+, standard library only).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/code_text"
+        },
+        "filename": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,64}\\.m?js$"
+        }
+      }
+    },
+    "js_function_spec": {
+      "description": "J2 input: a typed function spec. Examples are visible to the model; the golden set's hidden tests are not part of the request.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "params",
+        "returns",
+        "behavior"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/js_identifier"
+        },
+        "export": {
+          "enum": [
+            "named",
+            "default"
+          ],
+          "default": "named"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false
+        },
+        "params": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/js_identifier"
+              },
+              "type": {
+                "$ref": "#/$defs/js_type"
+              },
+              "description": {
+                "$ref": "#/$defs/short_text"
+              },
+              "optional": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "returns": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/js_type"
+            },
+            "description": {
+              "$ref": "#/$defs/short_text"
+            }
+          }
+        },
+        "behavior": {
+          "$ref": "#/$defs/long_text"
+        },
+        "examples": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "description": "One call: args in order, then either the expected return value or the error it throws.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "args"
+            ],
+            "properties": {
+              "args": {
+                "type": "array"
+              },
+              "returns": {},
+              "throws": {
+                "$ref": "#/$defs/short_text"
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "returns"
+                ]
+              },
+              {
+                "required": [
+                  "throws"
+                ]
+              }
+            ]
+          }
+        },
+        "constraints": {
+          "description": "For example: no recursion; O(n) time; do not mutate the input.",
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/short_text"
+          }
+        }
+      }
+    },
+    "js_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start_line",
+        "end_line"
+      ],
+      "properties": {
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start_column": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_column": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "js_finding": {
+      "description": "One JavaScript diagnostic. Parser and lint findings come from the JS checker and are taken as given; basis model marks a finding an SLM adds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "basis",
+        "message",
+        "range"
+      ],
+      "properties": {
+        "code": {
+          "description": "A code from the JS defect taxonomy (0.1).",
+          "type": "string",
+          "pattern": "^JS-[A-Z]+-[0-9]{3}$"
+        },
+        "rule": {
+          "description": "The ESLint rule id, for lint findings.",
+          "type": "string",
+          "maxLength": 100
+        },
+        "category": {
+          "enum": [
+            "syntax",
+            "correctness",
+            "security",
+            "performance",
+            "readability",
+            "idiom",
+            "design"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "basis": {
+          "enum": [
+            "parser",
+            "lint",
+            "test",
+            "model"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/short_text"
+        },
+        "range": {
+          "$ref": "#/$defs/js_range"
+        },
+        "suggestion": {
+          "$ref": "#/$defs/long_text"
+        }
+      }
+    },
+    "js_failure": {
+      "description": "J3 input: the signal that the code is wrong.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "message"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "test_failure",
+            "runtime_error",
+            "lint_finding"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/long_text"
+        },
+        "test_name": {
+          "$ref": "#/$defs/short_text"
+        },
+        "error_type": {
+          "$ref": "#/$defs/js_identifier"
+        },
+        "stack": {
+          "$ref": "#/$defs/long_text"
+        },
+        "finding": {
+          "$ref": "#/$defs/js_finding"
+        }
+      }
+    },
+    "js_execution": {
+      "description": "What the 0.8 sandbox reports for one module. Filled by the sandbox, never by the model.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parsed",
+        "lint",
+        "tests",
+        "violations",
+        "environment"
+      ],
+      "properties": {
+        "parsed": {
+          "type": "boolean"
+        },
+        "lint": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/js_finding"
+          }
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "status"
+            ],
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/short_text"
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "skip",
+                  "timeout"
+                ]
+              },
+              "duration_ms": {
+                "type": "number",
+                "minimum": 0
+              },
+              "message": {
+                "$ref": "#/$defs/long_text"
+              }
+            }
+          }
+        },
+        "violations": {
+          "description": "Attempts the sandbox blocked or limits it enforced. Any entry fails the gate.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "network",
+              "filesystem",
+              "process",
+              "timeout",
+              "memory",
+              "nondeterminism"
+            ]
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "node_version",
+            "profile_version"
+          ],
+          "properties": {
+            "node_version": {
+              "type": "string",
+              "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "profile_version": {
+              "$ref": "#/$defs/semver"
+            },
+            "timeout_ms": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "memory_mb": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "clock": {
+              "$ref": "#/$defs/timestamp"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "js_advice_input": {
+      "description": "J1 (tranche 2): advise on code.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/js_source"
+        },
+        "focus": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "correctness",
+              "security",
+              "performance",
+              "readability",
+              "idiom",
+              "design"
+            ]
+          }
+        },
+        "question": {
+          "$ref": "#/$defs/short_text"
+        }
+      }
+    },
+    "js_advice_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "findings",
+        "questions"
+      ],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/js_finding"
+          }
+        },
+        "answer": {
+          "$ref": "#/$defs/long_text"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/question"
+          }
+        }
+      }
+    },
+    "js_generation_input": {
+      "description": "J2 (tranche 1): generate a module from a function spec.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spec"
+      ],
+      "properties": {
+        "spec": {
+          "$ref": "#/$defs/js_function_spec"
+        }
+      }
+    },
+    "js_generation_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "questions"
+      ],
+      "properties": {
+        "module": {
+          "$ref": "#/$defs/js_source"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/short_text"
+          }
+        },
+        "execution": {
+          "$ref": "#/$defs/js_execution"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/question"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "module"
+          ]
+        },
+        {
+          "properties": {
+            "questions": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "js_correction_input": {
+      "description": "J3 (tranche 2): correct code given a failure signal.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "failure"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/js_source"
+        },
+        "failure": {
+          "$ref": "#/$defs/js_failure"
+        },
+        "tests": {
+          "description": "Visible tests, if the caller has them.",
+          "$ref": "#/$defs/js_source"
+        },
+        "spec": {
+          "$ref": "#/$defs/js_function_spec"
+        }
+      }
+    },
+    "js_correction_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "questions"
+      ],
+      "properties": {
+        "module": {
+          "description": "The corrected module. It is what the sandbox runs.",
+          "$ref": "#/$defs/js_source"
+        },
+        "patch": {
+          "description": "Unified diff from the input source, for review. Derived from module.",
+          "$ref": "#/$defs/code_text"
+        },
+        "explanation": {
+          "$ref": "#/$defs/long_text"
+        },
+        "execution": {
+          "$ref": "#/$defs/js_execution"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/question"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "module"
+          ]
+        },
+        {
+          "properties": {
+            "questions": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
     "reason_code": {
       "description": "Why a request ended Rejected or Violated. Stable codes; add, never repurpose.",
       "enum": [
@@ -254,7 +794,9 @@
         "OUTPUT_NONCONFORMANT",
         "MODEL_ERROR",
         "MODEL_TIMEOUT",
-        "POLICY_VIOLATION"
+        "POLICY_VIOLATION",
+        "SANDBOX_VIOLATION",
+        "SANDBOX_TIMEOUT"
       ]
     },
     "exit_status": {

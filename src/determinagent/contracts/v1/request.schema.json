@@ -26,6 +26,18 @@
     {
       "if": { "properties": { "task": { "const": "gherkin_requirements" } } },
       "then": { "properties": { "payload": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/gherkin_requirements_input" } } }
+    },
+    {
+      "if": { "properties": { "task": { "const": "js_advice" } } },
+      "then": { "properties": { "payload": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_advice_input" } } }
+    },
+    {
+      "if": { "properties": { "task": { "const": "js_generation" } } },
+      "then": { "properties": { "payload": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_generation_input" } } }
+    },
+    {
+      "if": { "properties": { "task": { "const": "js_correction" } } },
+      "then": { "properties": { "payload": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_correction_input" } } }
     }
   ]
 }

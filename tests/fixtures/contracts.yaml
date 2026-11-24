@@ -258,3 +258,154 @@ cases:
       gate: {result: fail}
       approval: {required: spot_review}
       status: applied
+
+  # JavaScript domain (J2 generate in tranche 1; J1 advise and J3 correct frozen now, used in tranche 2)
+  - name: J2 generation request with a typed function spec
+    contract: request
+    valid: true
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-001
+      task: js_generation
+      submitted_at: *ts
+      payload:
+        spec:
+          name: chunk
+          params:
+            - {name: items, type: "any[]", description: the array to split}
+            - {name: size, type: number, description: a positive integer}
+          returns: {type: "any[][]"}
+          behavior: Split items into consecutive arrays of length size. The last array holds the remainder. Throw a RangeError if size is not a positive integer.
+          examples:
+            - {args: [[1, 2, 3, 4, 5], 2], returns: [[1, 2], [3, 4], [5]]}
+            - {args: [[], 3], returns: []}
+            - {args: [[1], 0], throws: RangeError}
+          constraints: [do not mutate items]
+  - name: J2 example with both returns and throws
+    contract: js_function_spec
+    valid: false
+    doc:
+      name: f
+      params: []
+      returns: {type: number}
+      behavior: Returns one.
+      examples: [{args: [], returns: 1, throws: Error}]
+  - name: J2 spec with an invalid function name
+    contract: js_function_spec
+    valid: false
+    doc: {name: "2fast", params: [], returns: {type: number}, behavior: Returns one.}
+  - name: J2 request with a free-text prompt instead of a spec
+    contract: request
+    valid: false
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-002
+      task: js_generation
+      submitted_at: *ts
+      payload: {prompt: write me a chunk function}
+  - name: J2 resolved response with module and sandbox report
+    contract: response
+    valid: true
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-001
+      task: js_generation
+      status: resolved
+      route: {tier: lookup, rule_id: "task-field", config_version: "1.0.0", target: js_generation}
+      completed_at: *ts
+      output:
+        module:
+          filename: chunk.mjs
+          code: |
+            export function chunk(items, size) {
+              if (!Number.isInteger(size) || size < 1) throw new RangeError("size must be a positive integer");
+              const out = [];
+              for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+              return out;
+            }
+        assumptions: []
+        questions: []
+        execution:
+          parsed: true
+          lint: []
+          tests:
+            - {name: splits with remainder, status: pass, duration_ms: 0.4}
+            - {name: rejects size 0, status: pass, duration_ms: 0.2}
+          violations: []
+          environment: {node_version: v22.11.0, profile_version: 0.1.0, timeout_ms: 2000, memory_mb: 128, clock: *ts, seed: 42}
+  - name: J2 output with neither module nor question
+    contract: js_generation_output
+    valid: false
+    doc: {questions: []}
+  - name: J2 output asking instead of guessing
+    contract: js_generation_output
+    valid: true
+    doc: {questions: [{text: "Should a size larger than the array return one chunk or throw?"}]}
+  - name: sandbox report with an unknown violation kind
+    contract: js_execution
+    valid: false
+    doc: {parsed: true, lint: [], tests: [], violations: [gpu], environment: {node_version: v22.11.0, profile_version: 0.1.0}}
+  - name: J1 advice request and findings
+    contract: response
+    valid: true
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-010
+      task: js_advice
+      status: resolved
+      route: {tier: lookup, rule_id: "task-field", config_version: "1.0.0", target: js_advice}
+      completed_at: *ts
+      output:
+        findings:
+          - {code: JS-LINT-001, rule: no-unused-vars, category: correctness, severity: warning, basis: lint, message: "'tmp' is assigned a value but never used.", range: {start_line: 3, end_line: 3}}
+          - {code: JS-DES-001, category: design, severity: info, basis: model, message: The loop recomputes the total on every iteration., range: {start_line: 5, end_line: 9}, suggestion: Compute the total once before the loop.}
+        questions: []
+  - name: J1 finding with an RS code
+    contract: js_finding
+    valid: false
+    doc: {code: RS-KW-001, severity: error, basis: lint, message: wrong taxonomy, range: {start_line: 1, end_line: 1}}
+  - name: J3 correction request from a failing test
+    contract: request
+    valid: true
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-020
+      task: js_correction
+      submitted_at: *ts
+      payload:
+        source: {filename: sum.mjs, code: "export const sum = (xs) => xs.reduce((a, b) => a + b);\n"}
+        failure: {kind: test_failure, test_name: sum of empty array is 0, message: "TypeError: Reduce of empty array with no initial value", error_type: TypeError}
+  - name: J3 correction request without a failure signal
+    contract: request
+    valid: false
+    doc:
+      schema_version: "1.0"
+      request_id: js-req-021
+      task: js_correction
+      submitted_at: *ts
+      payload: {source: {code: "export const f = () => 1;\n"}}
+  - name: handoff of a generated module
+    contract: handoff-artifact
+    valid: true
+    doc:
+      schema_version: "1.0"
+      artifact_id: art-js-001
+      artifact_type: js_module
+      content: "export const one = () => 1;\n"
+      source_request_id: js-req-001
+      produced_at: *ts
+      profile_version: 0.1.0
+      execution: {parsed: true, lint: [], tests: [{name: returns one, status: pass}], violations: [], environment: {node_version: v22.11.0, profile_version: 0.1.0}}
+      checker: {passed: true, codes: []}
+  - name: handoff of a module without its sandbox report
+    contract: handoff-artifact
+    valid: false
+    doc:
+      schema_version: "1.0"
+      artifact_id: art-js-002
+      artifact_type: js_module
+      content: "export const one = () => 1;\n"
+      source_request_id: js-req-001
+      produced_at: *ts
+      profile_version: 0.1.0
+      checker: {passed: true, codes: []}
