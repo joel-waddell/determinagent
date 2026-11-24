@@ -89,7 +89,7 @@ SHEETS = {
         [
             ("id", 12, lambda c: c["id"]),
             ("stratum", 16, lambda c: c["stratum"]),
-            ("requirement", 45, lambda c: c["input"]["requirement"]),
+            ("requirement", 45, lambda c: _requirement_text(c["input"]["requirement"])),
             ("draft behavior", 10, lambda c: c["expected"]["behavior"]),
             ("draft reference feature", 70, lambda c: c["expected"].get("reference_feature") or ""),
             ("draft acceptance checks", 35, lambda c: "\n".join(c["expected"]["acceptance_checks"])),
@@ -117,6 +117,15 @@ README = [
     "RS ids: comma-separated, e.g. RS-04, RS-12.",
     "Checker result (T2) is what the deterministic checker returns today. It is shown for context, not as the answer.",
 ]
+
+
+def _requirement_text(r: dict) -> str:
+    lines = [f"Role: {r['role']}"] if r.get("role") else []
+    lines.append(f"Capability: {r['capability']}")
+    if r.get("benefit"):
+        lines.append(f"Benefit: {r['benefit']}")
+    lines += [f"- {a}" for a in r.get("acceptance_criteria", [])]
+    return "\n".join(lines)
 
 
 def build(batch_path: Path, out_path: Path) -> None:

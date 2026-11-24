@@ -33,9 +33,11 @@ The batches live in [`golden/v1/`](../golden/v1/). Every case has `id`, `task`, 
 
 | Task | `input` | `expected` |
 | --- | --- | --- |
-| T1 | `intent`, `vocabulary` | `behavior` (draft or ask), `reference_statements`, `guidance_type`, `rs_refs` |
+| T1 | `intent` (free text for now; see below), `vocabulary` | `behavior` (draft or ask), `reference_statements`, `guidance_type`, `rs_refs` |
 | T2 | `statement` (and later `intent`, for fidelity) | `form`, `fidelity`, `rs_refs`, `reason`, plus a `checker` snapshot |
-| T3 | `requirement` | `behavior`, `reference_feature`, `acceptance_checks` |
+| T3 | `requirement` (`role`, `capability`, `benefit`, `acceptance_criteria`) | `behavior`, `reference_feature`, `acceptance_checks` |
+
+T1 intents are kept as free text because they are what a business user types today. The typed request carries them in `intent.free_text`, and typed fields can be added once the 0.6 intake sprint picks a pattern. Every golden case converts to a valid v1 request (`determinagent.golden.to_request`), and a test checks this.
 
 Generated outputs are not compared word for word against a reference statement or feature. The reference shows one acceptable answer. Acceptance comes from the deterministic checkers plus a rubric built from `rs_refs` (T1) or `acceptance_checks` (T3). The rubric is defined in 0.3.
 

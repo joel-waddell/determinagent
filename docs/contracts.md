@@ -1,0 +1,49 @@
+# Contracts v1 (Phase 0.7)
+
+Every request entering DeterminAgent, every response leaving it, and every artifact or governance record it hands on is defined by a JSON Schema in [`src/determinagent/contracts/v1/`](../src/determinagent/contracts/v1/). Both cores validate against these same files: `validate(name, obj)` in [`js/src/contracts.js`](../js/src/contracts.js) (Ajv) and in [`determinagent/contracts`](../src/determinagent/contracts/__init__.py) (jsonschema). A parity test requires both to give the same validity on every shared example.
+
+> Status: **v1.0 release candidate.** The plan's 0.7 gate freezes these schemas. They are frozen when the 0.6 intake sprint has chosen the intake pattern, because that choice may add typed intent fields. Until then the only changes allowed are additive optional fields.
+
+## Schemas
+
+| Contract | `$id` | What it is |
+| --- | --- | --- |
+| `request` | `urn:determinagent:contracts:v1:request` | The typed request: `schema_version`, `request_id`, `task`, `submitted_at`, optional `domain`, and a `payload` that must match the task. |
+| `response` | `urn:determinagent:contracts:v1:response` | `status` (resolved, rejected or violated), a `reason_code` whenever the status is not resolved, the `route` taken, the task's `output`, and `receipt_head` (from Phase 2). |
+| `handoff-artifact` | `urn:determinagent:contracts:v1:handoff-artifact` | One accepted rule, advice statement or feature for a downstream tool, with its checker outcome, trace and source request. |
+| `governance-change` | `urn:determinagent:contracts:v1:governance-change` | One governance register entry: change type, versions, triggering receipts, gate results, approval and rollout. |
+| `common` | `urn:determinagent:contracts:v1:common` | Shared definitions: the three task inputs and outputs, `finding`, `trace_entry`, `question`, `route`, reason codes and exit statuses. |
+
+You can validate a single definition from `common` by name, for example `validate("rulespeak_generation_output", obj)`.
+
+## Design decisions
+
+- **JSON Schema 2020-12, with URN `$id`s.** The schemas never need a network fetch, and the same files serve both languages.
+- **Closed objects.** Every object sets `additionalProperties: false`, so input is constrained at the edge. A stray field such as an injected `prompt` is a schema error, not something a node might read.
+- **Typed fields first, with free text as the exception.** An `intent` needs either `subject` and `action` (with an optional `constraint_type`, conditions and qualification) or `free_text`. A Gherkin `requirement` is typed as role, capability, benefit and acceptance criteria. The golden set's T1 intents use `free_text` until 0.6 decides on typed intake.
+- **Size limits.** A statement or intent is capped at 500 characters, a feature at 4,000, and a request at 50 statements and 200 vocabulary terms. Over-size input is rejected before any model runs.
+- **The task and payload must agree.** The schema enforces it, and the router still verifies the route itself (Phase 1.2).
+- **Asking is a valid result.** Generation output may contain `questions` instead of `statements`, and Gherkin output may contain questions instead of a feature. Missing business decisions stay explicit (RS-17) instead of being guessed. An output with neither is invalid.
+- **Every statement carries a trace.** A generated statement needs at least one `trace_entry` (a claim, RS ids, source and application), following the response contract in RuleSpeak-Agent.md. Validation results report `form` and `fidelity` with the same values as that contract.
+- **Checker findings are the finding contract.** The `finding` definition is exactly what the RuleSpeak checker returns. `basis` also allows `model`, for findings an SLM adds.
+- **Exit statuses come from Phase 2.2.** `resolved` needs an output and no reason code. `rejected` and `violated` need a `reason_code`.
+- **Reason codes are an open-ended enum.** New codes may be added, but an existing code is never given a new meaning: `SCHEMA_INVALID`, `PAYLOAD_TASK_MISMATCH`, `UNSUPPORTED_SCHEMA_VERSION`, `NO_ROUTE`, `INPUT_TOO_LARGE`, `OUTPUT_SCHEMA_INVALID`, `OUTPUT_NONCONFORMANT`, `MODEL_ERROR`, `MODEL_TIMEOUT` and `POLICY_VIOLATION`.
+- **The governance rules are in the schema.** A change cannot be `applied` without a passing gate. A harness or golden-set change cannot be applied without a named human approval. These are the plan's change-control rules, so no client can skip them.
+- **Hashes are SHA-256 in lowercase hex.** That covers `receipt_head` and the triggering receipts, ready for the Phase 2.3 receipt chain.
+
+## Orchestration interface
+
+The plan starts orchestration synchronously behind an interface, so that a durable engine can replace it later without changing any node. The interface Phase 1.4 implements is:
+
+```
+handle(request) -> response                      # validates both against these contracts
+node(state) -> state                              # validate_input, route, execute, validate_output
+state = { request, route?, output?, status, reason_code?, receipts[] }
+```
+
+Each node gets the state and returns a new state. A node never calls another node. Only the orchestrator sequences them, which is the seam a durable workflow engine plugs into.
+
+## Versioning
+
+- `schema_version` is `"1.0"` in every document. Additive optional fields are allowed within 1.x, as long as consumers validate with the same schema version or a newer one.
+- Removing a field, renaming one, or narrowing a type means a v2 directory. A request with an unknown `schema_version` is rejected with `UNSUPPORTED_SCHEMA_VERSION`.

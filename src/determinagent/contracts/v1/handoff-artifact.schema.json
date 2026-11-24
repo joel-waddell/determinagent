@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:determinagent:contracts:v1:handoff-artifact",
+  "title": "DeterminAgent v1 artifact handoff",
+  "description": "What a downstream tool (rule repository, test runner) receives: one accepted artifact, its checker outcome and where it came from.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "artifact_id", "artifact_type", "content", "source_request_id", "produced_at", "checker", "profile_version"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "artifact_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
+    "artifact_type": { "enum": ["rulespeak_rule", "rulespeak_advice", "gherkin_feature"] },
+    "content": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/long_text" },
+    "template_id": { "type": "string", "pattern": "^RS-T[0-9]{2}b?$" },
+    "trace": { "type": "array", "items": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/trace_entry" } },
+    "source_request_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
+    "receipt_head": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/sha256" },
+    "produced_at": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/timestamp" },
+    "profile_version": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" },
+    "checker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "codes"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "form": { "enum": ["conforms", "needs_revision", "undetermined"] },
+        "review_required": { "type": "boolean" },
+        "codes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

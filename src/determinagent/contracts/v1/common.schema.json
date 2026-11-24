@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:determinagent:contracts:v1:common",
+  "title": "DeterminAgent v1 shared definitions",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "task": {
+      "description": "The three POC tasks. The router's target and the golden set's expected route.",
+      "enum": ["rulespeak_generation", "rulespeak_validation", "gherkin_requirements"]
+    },
+    "short_text": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "long_text": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "term": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^\\n]+$"
+    },
+    "vocabulary": {
+      "description": "Agreed business terms (the fact model). Supplied by the caller; a term string occurring in a statement does not prove the term is agreed.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/term" },
+      "uniqueItems": true,
+      "maxItems": 200
+    },
+    "rs_ref": { "type": "string", "pattern": "^RS-[0-9]{2}$" },
+    "rs_refs": { "type": "array", "items": { "$ref": "#/$defs/rs_ref" }, "uniqueItems": true },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "semver": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+
+    "constraint_type": {
+      "description": "Which kind of guidance the intent asks for. Maps to the RuleSpeak template families. 'unknown' lets the router or the SLM decide.",
+      "enum": [
+        "obligation",
+        "prohibition",
+        "restricted_permission",
+        "restricted_eligibility",
+        "classification",
+        "computation",
+        "procedure",
+        "advice_permission",
+        "advice_exemption",
+        "unknown"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text"],
+      "properties": {
+        "kind": {
+          "description": "if: applies while it holds. when: applies at the named occurrence (RS-15). before/after: timing. unless: profile extension.",
+          "enum": ["if", "when", "before", "after", "unless"]
+        },
+        "text": { "$ref": "#/$defs/short_text" }
+      }
+    },
+    "intent": {
+      "description": "Business intent for one constraint. Typed fields first; free_text is the exception and is required only when no typed field is given.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "constraint_type": { "$ref": "#/$defs/constraint_type" },
+        "subject": { "$ref": "#/$defs/term" },
+        "action": { "$ref": "#/$defs/short_text" },
+        "conditions": { "type": "array", "items": { "$ref": "#/$defs/condition" }, "maxItems": 5 },
+        "qualification": { "$ref": "#/$defs/short_text" },
+        "free_text": { "$ref": "#/$defs/short_text" }
+      },
+      "anyOf": [{ "required": ["free_text"] }, { "required": ["subject", "action"] }]
+    },
+    "requirement": {
+      "description": "A user requirement for Gherkin generation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability"],
+      "properties": {
+        "role": { "$ref": "#/$defs/short_text" },
+        "capability": { "$ref": "#/$defs/short_text" },
+        "benefit": { "$ref": "#/$defs/short_text" },
+        "acceptance_criteria": { "type": "array", "items": { "$ref": "#/$defs/short_text" }, "maxItems": 20 },
+        "feature_name": { "$ref": "#/$defs/short_text" }
+      }
+    },
+
+    "rulespeak_generation_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intent", "vocabulary"],
+      "properties": {
+        "intent": { "$ref": "#/$defs/intent" },
+        "vocabulary": { "$ref": "#/$defs/vocabulary" },
+        "source_ref": { "$ref": "#/$defs/short_text" }
+      }
+    },
+    "rulespeak_validation_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statements"],
+      "properties": {
+        "statements": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "text"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "text": { "$ref": "#/$defs/short_text" },
+              "intent": { "$ref": "#/$defs/intent", "description": "Independent statement of intent. Without it, fidelity is unverified." }
+            }
+          }
+        },
+        "vocabulary": { "$ref": "#/$defs/vocabulary" }
+      }
+    },
+    "gherkin_requirements_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement"],
+      "properties": {
+        "requirement": { "$ref": "#/$defs/requirement" },
+        "source_ref": { "$ref": "#/$defs/short_text" }
+      }
+    },
+
+    "finding": {
+      "description": "One diagnostic with its evidence chain. Same shape the RuleSpeak checker returns.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "kind", "disposition", "basis", "rs_refs", "source"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^(RS|GK)-[A-Z]+-[0-9]{3}$" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "kind": { "enum": ["form", "meaning", "style", "principle", "application", "profile", "local"] },
+        "disposition": { "enum": ["error", "review", "warning", "info"] },
+        "basis": { "enum": ["sourced", "inferred", "local", "model"] },
+        "rs_refs": { "$ref": "#/$defs/rs_refs" },
+        "source": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "trace_entry": {
+      "description": "One line of the response trace: a claim, the RS ids behind it and how they apply (RuleSpeak-Agent.md response contract, step 3).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "rs_refs", "application"],
+      "properties": {
+        "claim": { "type": "string", "minLength": 1 },
+        "rs_refs": { "$ref": "#/$defs/rs_refs" },
+        "source": { "type": "array", "items": { "type": "string" } },
+        "application": { "type": "string", "minLength": 1 }
+      }
+    },
+    "question": {
+      "description": "A clarifying question, returned instead of guessing a missing business decision.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "$ref": "#/$defs/short_text" },
+        "alternatives": { "type": "array", "items": { "$ref": "#/$defs/short_text" }, "maxItems": 5 },
+        "rs_refs": { "$ref": "#/$defs/rs_refs" }
+      }
+    },
+    "rulespeak_statement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "guidance_type", "template_id", "trace"],
+      "properties": {
+        "text": { "$ref": "#/$defs/short_text" },
+        "guidance_type": { "enum": ["rule", "advice"] },
+        "template_id": { "type": "string", "pattern": "^RS-T[0-9]{2}b?$" },
+        "assumptions": { "type": "array", "items": { "$ref": "#/$defs/short_text" } },
+        "trace": { "type": "array", "items": { "$ref": "#/$defs/trace_entry" }, "minItems": 1 }
+      }
+    },
+    "rulespeak_generation_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statements", "questions"],
+      "properties": {
+        "statements": { "type": "array", "items": { "$ref": "#/$defs/rulespeak_statement" } },
+        "questions": { "type": "array", "items": { "$ref": "#/$defs/question" } }
+      },
+      "anyOf": [
+        { "properties": { "statements": { "minItems": 1 } } },
+        { "properties": { "questions": { "minItems": 1 } } }
+      ]
+    },
+    "rulespeak_validation_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["results"],
+      "properties": {
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["statement_id", "form", "fidelity", "findings"],
+            "properties": {
+              "statement_id": { "$ref": "#/$defs/id" },
+              "form": { "enum": ["conforms", "needs_revision", "undetermined"] },
+              "fidelity": { "enum": ["preserved", "changed", "unverified"] },
+              "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+              "suggested_rewrites": { "type": "array", "items": { "$ref": "#/$defs/rulespeak_statement" } },
+              "questions": { "type": "array", "items": { "$ref": "#/$defs/question" } }
+            }
+          }
+        }
+      }
+    },
+    "gherkin_requirements_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questions"],
+      "properties": {
+        "feature": { "$ref": "#/$defs/long_text", "description": "One Gherkin document. Must pass the Gherkin profile." },
+        "covered_criteria": {
+          "description": "For each acceptance criterion (by index), the scenario names that cover it.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["criterion", "scenarios"],
+            "properties": {
+              "criterion": { "type": "integer", "minimum": 0 },
+              "scenarios": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "questions": { "type": "array", "items": { "$ref": "#/$defs/question" } }
+      },
+      "anyOf": [{ "required": ["feature"] }, { "properties": { "questions": { "minItems": 1 } } }]
+    },
+
+    "reason_code": {
+      "description": "Why a request ended Rejected or Violated. Stable codes; add, never repurpose.",
+      "enum": [
+        "SCHEMA_INVALID",
+        "PAYLOAD_TASK_MISMATCH",
+        "UNSUPPORTED_SCHEMA_VERSION",
+        "NO_ROUTE",
+        "INPUT_TOO_LARGE",
+        "OUTPUT_SCHEMA_INVALID",
+        "OUTPUT_NONCONFORMANT",
+        "MODEL_ERROR",
+        "MODEL_TIMEOUT",
+        "POLICY_VIOLATION"
+      ]
+    },
+    "exit_status": {
+      "description": "Phase 2.2 taxonomy. Resolved: completed and passed output validation. Rejected: refused by a validator or the router. Violated: completed but broke a contract or policy.",
+      "enum": ["resolved", "rejected", "violated"]
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier", "rule_id", "config_version"],
+      "properties": {
+        "tier": { "enum": ["reflex", "lookup", "pattern", "fallback", "none"] },
+        "rule_id": { "type": ["string", "null"] },
+        "config_version": { "$ref": "#/$defs/semver" },
+        "target": { "$ref": "#/$defs/task" },
+        "model": { "type": "string" }
+      }
+    }
+  }
+}

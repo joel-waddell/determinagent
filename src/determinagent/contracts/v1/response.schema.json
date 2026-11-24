@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:determinagent:contracts:v1:response",
+  "title": "DeterminAgent v1 response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "task", "status", "route", "completed_at"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "request_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
+    "task": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/task" },
+    "status": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/exit_status" },
+    "reason_code": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/reason_code" },
+    "reason": { "type": "string" },
+    "route": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/route" },
+    "completed_at": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/timestamp" },
+    "output": { "type": "object" },
+    "receipt_head": {
+      "$ref": "urn:determinagent:contracts:v1:common#/$defs/sha256",
+      "description": "Hash of the last execution receipt for this request (Phase 2.3)."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "resolved" } } },
+      "then": { "required": ["output"], "not": { "required": ["reason_code"] } },
+      "else": { "required": ["reason_code"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "rulespeak_generation" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/rulespeak_generation_output" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "rulespeak_validation" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/rulespeak_validation_output" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "gherkin_requirements" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/gherkin_requirements_output" } } }
+    }
+  ]
+}
