@@ -68,6 +68,7 @@ def test_workbook_round_trip(tmp_path):
 
     batch = tmp_path / "pilot.yaml"
     shutil.copy(ROOT / "golden" / "v1" / "pilot.yaml", batch)
+    before = {c["id"]: c for c in load(batch)}
     xlsx = tmp_path / "pilot.xlsx"
     wb_mod.build(batch, xlsx)
 
@@ -88,8 +89,27 @@ def test_workbook_round_trip(tmp_path):
     assert cases["T2-P002"]["expected"]["form"] == "undetermined"
     assert cases["T2-P002"]["expected"]["rs_refs"] == ["RS-09", "RS-13"]
     assert "T2-P003" not in cases
-    assert cases["T1-P001"]["label"]["status"] == "draft"
+    assert cases["T1-P001"] == before["T1-P001"]
     assert batch.read_text(encoding="utf-8").startswith("# DeterminAgent golden set v1")
+
+
+@pytest.mark.skipif(importlib.util.find_spec("openpyxl") is None, reason="openpyxl not installed")
+def test_flattened_feature_is_reflowed():
+    spec = importlib.util.spec_from_file_location("workbook", ROOT / "tools" / "golden" / "workbook.py")
+    wb_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wb_mod)
+
+    flat = (
+        "Feature: Refunds Scenario Outline: By amount Given a refund of <amount> dollars "
+        "When the refund is submitted Then the refund is <status> "
+        "Examples: | amount | status | | 500 | approved | | 500.01 | held |"
+    )
+    text = wb_mod._reflow_feature(flat)
+    assert text.splitlines()[:3] == ["Feature: Refunds", "", "  Scenario Outline: By amount"]
+    assert "      | 500.01 | held |" in text.splitlines()
+    assert gherkin.check(text).conformant
+    kept = "Feature: X\n\n  Scenario: Y\n    Given a\n    When b\n    Then c\n"
+    assert wb_mod._reflow_feature(kept) == kept
 
 
 @pytest.mark.skipif(importlib.util.find_spec("openpyxl") is None, reason="openpyxl not installed")

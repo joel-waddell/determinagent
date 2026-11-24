@@ -17,7 +17,7 @@ The total to reach ready is 7 to 11 agent sessions, plus Joel's spot-review time
 
 ## Data
 
-**What exists.** There is a 60-case pilot, still at draft labels. The full golden set is planned at 300 cases per task: 200 for dev and 100 held out ([golden-set.md](golden-set.md)). Held-out cases can never be used for training, so at most 200 labelled pairs per task come from the golden set.
+**What exists.** There is a 60-case pilot, labelled by the domain expert. The full golden set is planned at 300 cases per task: 200 for dev and 100 held out ([golden-set.md](golden-set.md)). Held-out cases can never be used for training, so at most 200 labelled pairs per task come from the golden set.
 
 **What fine-tuning needs.** For a narrow task with LoRA, a few hundred clean pairs per task is a reasonable floor, and 1,000 to 2,000 is more comfortable. These are rules of thumb, not measurements. The first fine-tuning run should check them with a learning curve at 25%, 50% and 100% of the data.
 

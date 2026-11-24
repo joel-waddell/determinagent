@@ -13,6 +13,7 @@ label.status "labelled". Rows left blank stay drafts.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -254,6 +255,42 @@ def _split_ids(v: str) -> list[str]:
     return [x.strip() for x in str(v).replace(";", ",").split(",") if x.strip()]
 
 
+_GK_LINE = re.compile(
+    r"\s+(?=(?:Feature|Rule|Background|Scenario Outline|Scenario Template|Scenario|Example|Examples):"
+    r"|(?:Given|When|Then|And|But)\s)"
+)
+_GK_INDENT = {"Feature": 0, "Rule": 2, "Background": 2, "Scenario": 2, "Example": 2, "Examples": 4}
+
+
+def _reflow_feature(text: str) -> str:
+    """Restore line breaks in a feature that was pasted into one cell as a single line.
+
+    Spreadsheet edits often flatten multi-line cells. Gherkin keywords and table
+    rows mark where each line starts, so a feature with no line breaks is split
+    back into lines and indented. A feature that already has line breaks is left
+    as it is.
+    """
+    text = str(text).strip()
+    if "\n" in text:
+        return text + "\n"
+    out: list[str] = []
+    for part in _GK_LINE.split(text):
+        head, bar, rows = part.partition("|")
+        head = head.strip()
+        key = head.split(":")[0] if ":" in head else ""
+        key = "Scenario" if key.startswith("Scenario") else key
+        if key in _GK_INDENT:
+            if key != "Feature":
+                out.append("")
+            out.append(" " * _GK_INDENT[key] + head)
+        elif head:
+            out.append("    " + head)
+        if bar:
+            for row in (bar + rows).replace("| |", "|\n|").splitlines():
+                out.append("      " + " ".join(row.split()))
+    return "\n".join(out) + "\n"
+
+
 def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain expert") -> dict[str, int]:
     data = yaml.safe_load(batch_path.read_text(encoding="utf-8"))
     by_id = {c["id"]: c for c in data["cases"]}
@@ -312,7 +349,7 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
                     if behavior:
                         e["behavior"] = behavior
                     if feature:
-                        e["reference_feature"] = _Lit(str(feature).rstrip("\n") + "\n")
+                        e["reference_feature"] = _Lit(_reflow_feature(feature))
                     if checks:
                         e["acceptance_checks"] = _split_lines(checks)
             if e.get("reference_feature"):
