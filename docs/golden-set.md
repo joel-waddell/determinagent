@@ -75,6 +75,16 @@ These are the lessons for drafting batches 2 to 8:
 
 T3 drafting is the weak spot, with only 45% of drafts agreed. Batch 2 applies these rules before it goes to Joel.
 
+## Batch 2 (2026-11-24, drafted)
+
+[`golden/v1/batch2.yaml`](../golden/v1/batch2.yaml) holds 120 draft cases, 40 per task. Each task has 27 dev and 13 held-out cases, chosen by a seeded shuffle, which starts the held-out split. Cases span retail, banking, insurance, healthcare, logistics, HR, education, travel, property and hospitality.
+
+- **T1:** every template family appears at least twice, except the "Only <subject> may" form. Following the pilot corrections, eligibility is drafted with the governed thing first ("may be approved only by"). 8 cases are asks, 4 are compound, 4 are system-phrased (2 drafts, 2 asks) and 2 are adversarial.
+- **T2:** 16 conform, 17 need revision and 7 are undetermined. 7 are deliberate traps, and in 17 cases the checker's verdict differs from the expected label. One trap is a checker false positive: "the application of a tenant" trips the system-term finding (T2-B2-016).
+- **T3:** boundaries are tested on both sides, with the smallest step the data allows. No scenario asserts behaviour that the criteria don't state, and 4 cases are asks.
+
+On the draft labels, the checker-only baseline gets 58% of batch 2's T2 cases right, with 94% precision and 63% recall. That is lower than on the pilot because batch 2 has more traps.
+
 ## Open points
 
 - The repository is public, so the held-out split will be public too. Public held-out data can leak into future model training. If that matters, the held-out batches can live in a private location and the tests can read them from there.
