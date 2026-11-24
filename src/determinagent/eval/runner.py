@@ -109,12 +109,47 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
             "questions": _QUESTIONS,
         },
     },
+    # The model fills in the parts of the feature; the runner writes the Gherkin
+    # text, so keywords, indentation and tables are right by construction.
     "gherkin_requirements": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["feature", "covered_criteria", "questions"],
+        "required": ["feature_name", "scenarios", "covered_criteria", "questions"],
         "properties": {
-            "feature": {"type": "string", "description": "The Gherkin document, or an empty string when asking."},
+            "feature_name": {"type": "string", "description": "The feature's name, or an empty string when asking."},
+            "scenarios": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["name", "steps", "examples"],
+                    "properties": {
+                        "name": {"type": "string"},
+                        "steps": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "required": ["keyword", "text"],
+                                "properties": {
+                                    "keyword": {"enum": ["Given", "When", "Then", "And", "But"]},
+                                    "text": {"type": "string"},
+                                },
+                            },
+                        },
+                        "examples": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "required": ["columns", "rows"],
+                            "description": "Only for a Scenario Outline; otherwise no columns and no rows.",
+                            "properties": {
+                                "columns": _STR_LIST,
+                                "rows": {"type": "array", "items": _STR_LIST},
+                            },
+                        },
+                    },
+                },
+            },
             "covered_criteria": {
                 "type": "array",
                 "items": {
@@ -235,7 +270,7 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
                 why = "; ".join(f"{f.code} {f.title}" for f in fs)
                 out.append(f"statement {i} ({st['text']!r}) fails the RuleSpeak checker: {why}")
     elif task == "gherkin_requirements":
-        feature, qs = reply["feature"].strip(), reply["questions"]
+        feature, qs = render_feature(reply), reply["questions"]
         if not feature and not qs:
             out.append("return a feature or at least one question")
         if feature:
@@ -320,9 +355,51 @@ def _output(task: str, reply: dict[str, Any], request: dict[str, Any], chk: rule
         "covered_criteria": [c for c in reply["covered_criteria"] if c["criterion"] >= 0],
         "questions": _questions(reply["questions"]),
     }
-    if reply["feature"].strip():
-        out["feature"] = reply["feature"]
+    feature = render_feature(reply)
+    if feature:
+        out["feature"] = feature
     return out
+
+
+def _line(text: str) -> str:
+    return " ".join(str(text).split())
+
+
+def _cell(text: str) -> str:
+    return _line(text).replace("|", "\\|")
+
+
+def render_feature(reply: dict[str, Any]) -> str:
+    """Write the Gherkin document from the reply's parts. Empty when there is nothing to write."""
+    name, scenarios = _line(reply.get("feature_name", "")), reply.get("scenarios", [])
+    if not name and not scenarios:
+        return ""
+    lines = [f"Feature: {name}"]
+    for sc in scenarios:
+        ex = sc["examples"]
+        outline = bool(ex["columns"])
+        lines += ["", f"  {'Scenario Outline' if outline else 'Scenario'}: {_line(sc['name'])}"]
+        lines += [f"    {st['keyword']} {_line(st['text'])}" for st in sc["steps"]]
+        if outline:
+            lines += ["", "    Examples:", "      | " + " | ".join(_cell(c) for c in ex["columns"]) + " |"]
+            lines += ["      | " + " | ".join(_cell(c) for c in row) + " |" for row in ex["rows"]]
+    return "\n".join(lines) + "\n"
+
+
+_RS_PREFIX = re.compile(r"^\s*(RS-\d{2})\b")
+
+
+def _tidy_refs(node: Any) -> None:
+    """Keep only the id when a model copies an index line ("RS-04 form: ...") into an rs_refs list."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == "rs_refs" and isinstance(v, list):
+                node[k] = [m.group(1) if isinstance(r, str) and (m := _RS_PREFIX.match(r)) else r for r in v]
+            else:
+                _tidy_refs(v)
+    elif isinstance(node, list):
+        for v in node:
+            _tidy_refs(v)
 
 
 def _parse(task: str, text: str, request: dict[str, Any]) -> tuple[Any, list[str], str]:
@@ -333,6 +410,7 @@ def _parse(task: str, text: str, request: dict[str, Any]) -> tuple[Any, list[str
         return None, [f"the reply is not valid JSON: {e}"], "OUTPUT_SCHEMA_INVALID"
     if not isinstance(reply, dict):
         return reply, ["the reply is not a JSON object"], "OUTPUT_SCHEMA_INVALID"
+    _tidy_refs(reply)
     problems = _problems(task, reply, request)
     schema_bad = bool(problems) and problems[0].startswith("reply does not match")
     return reply, problems, "OUTPUT_SCHEMA_INVALID" if schema_bad else "OUTPUT_NONCONFORMANT"
@@ -421,6 +499,7 @@ def run_case(case: dict[str, Any], adapter: Adapter, *, retries: int = 2) -> dic
             },
         ]
     record["problems"] = problems
+    record["last_reply"] = c.text[:4000]
     record["response"] = _response(case, "violated", code=code, why="; ".join(problems))
     return record
 

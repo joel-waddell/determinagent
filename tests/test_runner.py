@@ -41,13 +41,35 @@ def oracle_reply(case):
     if case["task"] == "rulespeak_validation":
         return {"form": e["form"], "rationale": "per RS-04", "rs_refs": ["RS-04"], "questions": []}
     if e["behavior"] == "ask":
-        return {"feature": "", "covered_criteria": [], "questions": ask}
+        return {"feature_name": "", "scenarios": [], "covered_criteria": [], "questions": ask}
     n = len(case["input"]["requirement"].get("acceptance_criteria", []))
-    return {
-        "feature": e["reference_feature"],
-        "covered_criteria": [{"criterion": i, "scenarios": ["reference"]} for i in range(n)],
-        "questions": [],
-    }
+    return dict(
+        feature_parts(e["reference_feature"]),
+        covered_criteria=[{"criterion": i, "scenarios": ["reference"]} for i in range(n)],
+        questions=[],
+    )
+
+
+def feature_parts(text):
+    """The reply parts for a reference feature, read with the official Gherkin parser."""
+    from gherkin.parser import Parser
+
+    doc = Parser().parse(text)["feature"]
+    scenarios = []
+    for child in doc["children"]:
+        sc = child["scenario"]
+        table = sc["examples"][0] if sc["examples"] else None
+        scenarios.append(
+            {
+                "name": sc["name"],
+                "steps": [{"keyword": st["keyword"].strip(), "text": st["text"]} for st in sc["steps"]],
+                "examples": {
+                    "columns": [c["value"] for c in table["tableHeader"]["cells"]] if table else [],
+                    "rows": [[c["value"] for c in r["cells"]] for r in table["tableBody"]] if table else [],
+                },
+            }
+        )
+    return {"feature_name": doc["name"], "scenarios": scenarios}
 
 
 def test_prompts_render_for_every_pilot_case():
@@ -266,3 +288,22 @@ def test_closed_vocabulary_needs_a_proposal():
     out = rec["response"]["output"]
     assert out["vocabulary_proposals"][0]["term"] == "shipment"
     assert contracts.validate("response", rec["response"]) == []
+
+
+def test_feature_is_written_from_its_parts():
+    from determinagent.conformance import gherkin
+    from determinagent.eval.runner import render_feature
+
+    for c in CASES:
+        if c["task"] == "gherkin_requirements" and c["expected"]["behavior"] == "draft":
+            text = render_feature(feature_parts(c["expected"]["reference_feature"]))
+            assert gherkin.check(text).conformant, text
+            assert feature_parts(text) == feature_parts(c["expected"]["reference_feature"])
+    assert render_feature({"feature_name": "", "scenarios": []}) == ""
+
+
+def test_rs_ids_copied_with_their_index_text_are_trimmed():
+    case = BY_ID["T2-P001"]
+    reply = dict(oracle_reply(case), rs_refs=["RS-04 form: obligation with must"])
+    rec = run_case(case, FakeAdapter([reply]), retries=0)
+    assert rec["response"]["status"] == "resolved"
