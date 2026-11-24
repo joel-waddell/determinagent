@@ -31,7 +31,7 @@ def test_cases(case):
 
 @pytest.mark.parametrize("case", FIXTURES["vocabulary_cases"], ids=lambda c: c["id"])
 def test_vocabulary_cases(case):
-    assert_checker(case, rulespeak.check(case["text"], case["vocabulary"]))
+    assert_checker(case, rulespeak.check(case["text"], case["vocabulary"], proposed=case.get("proposed")))
 
 
 def test_fixture_labels_are_well_formed():

@@ -29,11 +29,14 @@ def oracle_reply(case):
     ask = [{"text": "Which case is meant?", "alternatives": []}]
     if case["task"] == "rulespeak_generation":
         if e["behavior"] == "ask":
-            return {"statements": [], "questions": ask}
+            return {"statements": [], "questions": ask, "vocabulary_proposals": []}
         trace = [{"claim": "obligation", "rs_refs": ["RS-04"], "application": "must states the requirement"}]
         return {
             "statements": [{"text": s, "assumptions": [], "trace": trace} for s in e["reference_statements"]],
             "questions": [],
+            "vocabulary_proposals": [
+                dict(p, rationale=p.get("rationale", "")) for p in e.get("vocabulary_proposals", [])
+            ],
         }
     if case["task"] == "rulespeak_validation":
         return {"form": e["form"], "rationale": "per RS-04", "rs_refs": ["RS-04"], "questions": []}
@@ -52,7 +55,7 @@ def test_prompts_render_for_every_pilot_case():
         request, _, p = prepare(c)
         assert contracts.validate("request", request) == []
         assert "$" not in p.system.replace("$templates", "") and p.user
-        assert p.version == "v1/1.0.0"
+        assert p.version == prompts.load(c["task"]).version
 
 
 def test_prompts_carry_profile_facts():
@@ -86,6 +89,7 @@ def test_retry_feeds_back_checker_findings_and_recovers():
     bad = {
         "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
         "questions": [],
+        "vocabulary_proposals": [],
     }
     fake = FakeAdapter([bad, oracle_reply(case)])
     rec = run_case(case, fake)
@@ -98,7 +102,11 @@ def test_retry_feeds_back_checker_findings_and_recovers():
 
 def test_retries_exhausted_is_violated_nonconformant():
     case = BY_ID["T1-P001"]
-    bad = {"statements": [{"text": "Orders need items", "assumptions": [], "trace": []}], "questions": []}
+    bad = {
+        "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
+        "questions": [],
+        "vocabulary_proposals": [],
+    }
     rec = run_case(case, FakeAdapter([bad] * 3), retries=2)
     r = rec["response"]
     assert r["status"] == "violated" and r["reason_code"] == "OUTPUT_NONCONFORMANT"
@@ -240,3 +248,21 @@ def test_from_spec_env(monkeypatch):
     monkeypatch.setenv("DETERMINAGENT_EXTRA_BODY", '{"reasoning_effort": "none"}')
     a = from_spec("ollama:qwen3:0.6b")
     assert a.base_url == "http://gpu:11434/v1" and a.extra_body == {"reasoning_effort": "none"}
+
+
+def test_closed_vocabulary_needs_a_proposal():
+    case = BY_ID["T1-P002"]
+    silent = dict(oracle_reply(case), vocabulary_proposals=[])
+    unused = dict(
+        oracle_reply(case),
+        vocabulary_proposals=oracle_reply(case)["vocabulary_proposals"]
+        + [{"term": "carrier", "definition": "A delivery firm.", "rationale": ""}],
+    )
+    fake = FakeAdapter([silent, unused, oracle_reply(case)])
+    rec = run_case(case, fake)
+    assert rec["response"]["status"] == "resolved" and rec["attempts"] == 3
+    assert "RS-VOC-001" in fake.calls[1]["messages"][-1]["content"]
+    assert "'carrier' is not used" in fake.calls[2]["messages"][-1]["content"]
+    out = rec["response"]["output"]
+    assert out["vocabulary_proposals"][0]["term"] == "shipment"
+    assert contracts.validate("response", rec["response"]) == []

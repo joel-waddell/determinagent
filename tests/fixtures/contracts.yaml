@@ -143,6 +143,25 @@ cases:
     contract: rulespeak_generation_output
     valid: false
     doc: {statements: [{text: Each order must have a customer., guidance_type: rule, template_id: RS-T01, trace: []}], questions: []}
+  - name: generation output with a vocabulary proposal
+    contract: rulespeak_generation_output
+    valid: true
+    doc:
+      statements:
+        - text: A shipment must not be sent to a customer whose balance is overdue.
+          guidance_type: rule
+          template_id: RS-T02
+          trace: [{claim: Prohibition, rs_refs: [RS-08], application: "must not with a delimiting condition"}]
+      questions: []
+      vocabulary_proposals:
+        - {term: shipment, definition: A dispatch of one or more orders to a customer., rationale: The intent is about what is sent.}
+  - name: vocabulary proposal without a definition
+    contract: rulespeak_generation_output
+    valid: false
+    doc:
+      statements: []
+      questions: [{text: "Is shipment an agreed term?", rs_refs: [RS-22]}]
+      vocabulary_proposals: [{term: shipment}]
   - name: rejected response with reason code
     contract: response
     valid: true

@@ -95,7 +95,10 @@ def _score_generation(case: dict[str, Any], out: dict[str, Any], reasons: list[s
     exp = case["expected"]
     stmts, questions = out.get("statements", []), out.get("questions", [])
     vocab = case["input"].get("vocabulary")
-    wellformed = all(rulespeak.check(st["text"], vocab).passed for st in stmts)
+    # The vocabulary is closed. A statement may use a term only the output
+    # proposes; it passes, with the term left for the user to confirm.
+    proposed = [p["term"] for p in out.get("vocabulary_proposals", [])]
+    wellformed = all(rulespeak.check(st["text"], vocab, proposed=proposed).passed for st in stmts)
     if not wellformed:
         reasons.append("statement fails the RuleSpeak checker")
     if exp["behavior"] == "ask":

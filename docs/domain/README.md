@@ -27,8 +27,8 @@ Field lists below are the working definition for 0.2 (golden set) and 0.7 (contr
 ### T1 RuleSpeak generation
 
 - **Input:** business intent (one constraint, stated in plain terms), the domain vocabulary (fact model terms), and optional context such as the policy source.
-- **Output:** one or more rule statements, each conformant to the RuleSpeak profile and using only vocabulary terms as subjects.
-- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary)` in either core, with `guidance_type: rule`. Review findings are sent to the rubric.
+- **Output:** one or more rule statements, each conformant to the RuleSpeak profile and using only vocabulary terms as subjects. The vocabulary is closed: a term the intent needs but the vocabulary lacks comes back as a vocabulary proposal (term and definition) for the user to confirm.
+- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary, proposed)` in either core, with `guidance_type: rule`. Review findings are sent to the rubric.
 - **Semantic acceptance:** the statements express the intent, no more and no less (rubric, Phase 0.2).
 
 ### T2 RuleSpeak validation

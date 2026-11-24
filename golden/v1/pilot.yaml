@@ -1,8 +1,8 @@
 # DeterminAgent golden set v1, pilot batch (Phase 0.2).
 #
 # 60 cases, 20 per task, all in the dev split. Claude drafted every expected
-# value. The domain expert labelled all 60 (40 agreed, 20 corrected). The T1-P002
-# vocabulary gained "shipment" to match the expert's reference statement.
+# value. The domain expert labelled all 60 (40 agreed, 20 corrected). The
+# vocabulary is closed, so T1-P002 proposes "shipment" instead of assuming it.
 # Schema and sizing: docs/golden-set.md.
 version: 1.0.0-pilot
 cases:
@@ -39,7 +39,6 @@ cases:
     - order
     - customer
     - balance
-    - shipment
   expected:
     route: rulespeak_generation
     behavior: draft
@@ -50,6 +49,10 @@ cases:
     - RS-08
     - RS-22
     - RS-17
+    vocabulary_proposals:
+    - term: shipment
+      definition: A dispatch of one or more orders to a customer.
+      rationale: The rule governs what is sent, and the vocabulary has no term for it.
   draft_note: Subject chosen as the order, which is what is shipped.
   label:
     status: labelled

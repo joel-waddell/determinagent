@@ -66,7 +66,7 @@ These are the lessons for drafting batches 2 to 8:
 
 - **T1: lead with what the rule constrains.** "A timesheet may be approved only by a team lead" (P003) and "The number of people occupying a hotel room must not exceed 3" (P016) put the governed thing or quantity first. RS-17 (precise terms) was added to four of the five corrections, so drafts should cite it whenever a term is chosen.
 - **T1: ask when the business rule itself is unclear.** System-phrased intent with open questions about scope, counting and duration (P015) is an ask, even if a plausible draft exists. Any draft statement kept on an ask case is illustrative only.
-- **T1: name the domain term.** P002 uses "shipment" for what is sent. Joel noted that the term should be confirmed if the vocabulary is closed, so `shipment` was added to that case's vocabulary.
+- **T1: name the domain term, and propose it when the vocabulary lacks it.** P002 uses "shipment" for what is sent. The vocabulary is closed, so the expected output proposes `shipment` with a definition instead of assuming it (see [contracts.md](contracts.md#design-decisions)). A T1 case can carry `expected.vocabulary_proposals`. The workbook shows them, and the expert can correct them as `term: definition` lines.
 - **T2: a vague term does not make the form undetermined.** P017 ("in a timely manner") conforms in form, with the vague term flagged for clarification. The checker already said this, so the draft label was wrong.
 - **T2: must plus only is a revision, not an open question.** P015 needs revision, because both keywords are operative and the author must say which policy is meant.
 - **T3: test both sides of every boundary, tightly.** For example 59:59 against 60:01 minutes, $500 against $500.01, and 14:59 against 15:01. Drafts used one-minute or whole-unit gaps.
@@ -80,7 +80,7 @@ T3 drafting is the weak spot, with only 45% of drafts agreed. Batch 2 applies th
 [`golden/v1/batch2.yaml`](../golden/v1/batch2.yaml) holds 120 draft cases, 40 per task. Each task has 27 dev and 13 held-out cases, chosen by a seeded shuffle, which starts the held-out split. Cases span retail, banking, insurance, healthcare, logistics, HR, education, travel, property and hospitality.
 
 - **T1:** every template family appears at least twice, except the "Only <subject> may" form. Following the pilot corrections, eligibility is drafted with the governed thing first ("may be approved only by"). 8 cases are asks, 4 are compound, 4 are system-phrased (2 drafts, 2 asks) and 2 are adversarial.
-- **T2:** 16 conform, 17 need revision and 7 are undetermined. 7 are deliberate traps, and in 17 cases the checker's verdict differs from the expected label. One trap is a checker false positive: "the application of a tenant" trips the system-term finding (T2-B2-016).
+- **T2:** 16 conform, 17 need revision and 7 are undetermined. 7 are deliberate traps, and in 17 cases the checker's verdict differs from the expected label. One trap is a checker false positive: "the application of a tenant" trips the system-term finding (T2-B2-016). Two T1 cases (T1-B2-031 and T1-B2-035) expect a vocabulary proposal, because the intent needs a term the vocabulary lacks.
 - **T3:** boundaries are tested on both sides, with the smallest step the data allows. No scenario asserts behaviour that the criteria don't state, and 4 cases are asks.
 
 On the draft labels, the checker-only baseline gets 58% of batch 2's T2 cases right, with 94% precision and 63% recall. That is lower than on the pilot because batch 2 has more traps.

@@ -181,13 +181,25 @@
         "trace": { "type": "array", "items": { "$ref": "#/$defs/trace_entry" }, "minItems": 1 }
       }
     },
+    "vocabulary_proposal": {
+      "description": "A business term the response proposes to add to the closed vocabulary. A statement that uses it holds only once the user confirms the term (RS-VOC-002).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["term", "definition"],
+      "properties": {
+        "term": { "$ref": "#/$defs/term" },
+        "definition": { "$ref": "#/$defs/short_text" },
+        "rationale": { "$ref": "#/$defs/short_text" }
+      }
+    },
     "rulespeak_generation_output": {
       "type": "object",
       "additionalProperties": false,
       "required": ["statements", "questions"],
       "properties": {
         "statements": { "type": "array", "items": { "$ref": "#/$defs/rulespeak_statement" } },
-        "questions": { "type": "array", "items": { "$ref": "#/$defs/question" } }
+        "questions": { "type": "array", "items": { "$ref": "#/$defs/question" } },
+        "vocabulary_proposals": { "type": "array", "items": { "$ref": "#/$defs/vocabulary_proposal" }, "maxItems": 20 }
       },
       "anyOf": [
         { "properties": { "statements": { "minItems": 1 } } },

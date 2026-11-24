@@ -213,15 +213,23 @@ def normalize(statement: str) -> str:
     return _WS.sub(" ", statement).strip()
 
 
+def _term_in(term: str, subject: str) -> bool:
+    return re.search(r"\b" + re.escape(term) + r"s?\b", subject.lower()) is not None
+
+
 def check(
     statement: str,
     vocabulary: Iterable[str] | None = None,
     profile: RuleSpeakProfile | None = None,
+    proposed: Iterable[str] | None = None,
 ) -> RuleSpeakResult:
     """Check a single RuleSpeak statement.
 
-    ``vocabulary`` is an optional list of business terms. When given, the
-    subject must contain one of them (a local policy check).
+    ``vocabulary`` is an optional list of agreed business terms. When given,
+    the subject must contain one of them (a local policy check). The
+    vocabulary is closed: ``proposed`` lists terms the response proposes to
+    add. A subject that uses only a proposed term needs the user's
+    confirmation (RS-VOC-002, review); any other subject fails (RS-VOC-001).
     """
     p = profile or default_profile()
     s = normalize(statement)
@@ -298,8 +306,13 @@ def check(
     if vocabulary is not None and t is not None:
         subject = slots.get("subject", "")
         terms = [v.strip().lower() for v in vocabulary if v.strip()]
-        result.term_hits = [v for v in terms if re.search(r"\b" + re.escape(v) + r"s?\b", subject.lower())]
+        result.term_hits = [v for v in terms if _term_in(v, subject)]
         if not result.term_hits:
-            add(p.finding("RS-VOC-001", f'No vocabulary term found in subject "{subject}"'))
+            pending = [v.strip().lower() for v in proposed or () if v.strip()]
+            hit = next((v for v in pending if _term_in(v, subject)), None)
+            if hit:
+                add(p.finding("RS-VOC-002", f'Subject uses the proposed term "{hit}", which needs confirmation'))
+            else:
+                add(p.finding("RS-VOC-001", f'No vocabulary term found in subject "{subject}"'))
 
     return result

@@ -729,7 +729,6 @@ cases:
     intent: Invoices must be paid within 30 days, and late invoices are charged interest.
     vocabulary:
     - invoice
-    - interest charge
   expected:
     route: rulespeak_generation
     behavior: draft
@@ -743,6 +742,10 @@ cases:
     - RS-04
     - RS-17
     - RS-25
+    vocabulary_proposals:
+    - term: interest charge
+      definition: An amount added to an invoice that is paid late.
+      rationale: The intent says late invoices are charged interest; the vocabulary has no term for the charge.
   draft_note: The interest rate is not given; the statements leave it open.
   label:
     status: draft
@@ -833,7 +836,6 @@ cases:
     vocabulary:
     - customer
     - order
-    - shipment notification
   expected:
     route: rulespeak_generation
     behavior: draft
@@ -844,6 +846,10 @@ cases:
     - RS-04
     - RS-15
     - RS-24
+    vocabulary_proposals:
+    - term: shipment notification
+      definition: A message telling the customer that their order has been shipped.
+      rationale: The system wording names an email; the business rule is about notifying the customer.
   draft_note: Business rule kept, email channel dropped; confirm the channel matters.
   label:
     status: draft

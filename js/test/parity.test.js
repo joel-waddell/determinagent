@@ -27,7 +27,7 @@ req = json.load(sys.stdin)
 out = {
   "contracts": [contracts.is_valid(n, d) for n, d in req["contracts"]],
   "requests": [golden.to_request(c) for c in req["golden"]],
-  "rulespeak": [rulespeak.check(t, v).to_dict() for t, v in req["rulespeak"]],
+  "rulespeak": [rulespeak.check(t, v, proposed=q).to_dict() for t, v, q in req["rulespeak"]],
   "gherkin": [gherkin.check(s).to_dict() for s in req["gherkin"]],
 }
 json.dump(out, sys.stdout)
@@ -37,7 +37,7 @@ test('Python and JavaScript cores agree on every fixture', { skip: !hasPython &&
   const rs = fixture('rulespeak_cases')
   const gk = fixture('gherkin_cases')
   const req = {
-    rulespeak: [...rs.cases, ...rs.vocabulary_cases].map((c) => [c.text, c.vocabulary ?? null]),
+    rulespeak: [...rs.cases, ...rs.vocabulary_cases].map((c) => [c.text, c.vocabulary ?? null, c.proposed ?? null]),
     gherkin: [...gk.conformant, ...gk.warnings, ...gk.errors].map((c) => c.source),
     contracts: fixture('contracts').cases.map((c) => [c.contract, c.doc]),
     golden: parseYaml(readFileSync(new URL('../../golden/v1/pilot.yaml', import.meta.url), 'utf8')).cases,
@@ -46,7 +46,9 @@ test('Python and JavaScript cores agree on every fixture', { skip: !hasPython &&
   assert.equal(res.status, 0, res.stderr)
   const py = JSON.parse(res.stdout)
 
-  req.rulespeak.forEach(([t, v], i) => assert.deepEqual(rulespeak.check(t, v).toDict(), py.rulespeak[i], t))
+  req.rulespeak.forEach(([t, v, q], i) =>
+    assert.deepEqual(rulespeak.check(t, v, undefined, q).toDict(), py.rulespeak[i], t),
+  )
   req.gherkin.forEach((s, i) => assert.deepEqual(gherkin.check(s).toDict(), py.gherkin[i], s))
   req.contracts.forEach(([n, d], i) => assert.equal(isValid(n, d), py.contracts[i], n))
   req.golden.forEach((c, i) => assert.deepEqual(toRequest(c), py.requests[i], c.id))

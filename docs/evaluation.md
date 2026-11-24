@@ -19,7 +19,7 @@ A run is a JSON Lines file with one record per golden case:
 | Task | Success means |
 | --- | --- |
 | All | The response is contract-valid, its status is `resolved`, and it is routed to the expected task. |
-| T1 generation | If the expected behavior is *ask*: questions and no statements. Otherwise: at least as many statements as the reference, every statement passes the RuleSpeak checker with the case vocabulary, and the guidance type is the one expected. |
+| T1 generation | If the expected behavior is *ask*: questions and no statements. Otherwise: at least as many statements as the reference, every statement passes the RuleSpeak checker with the case vocabulary and the output's own vocabulary proposals (a proposed term passes as RS-VOC-002, a review finding), and the guidance type is the one expected. |
 | T2 validation | The `form` verdict equals the expert label. For precision and recall, a statement counts as defective when its form is `needs_revision` or `undetermined`. |
 | T3 Gherkin | If the expected behavior is *ask*: questions and no feature. Otherwise: the feature passes the Gherkin profile, and `covered_criteria` covers every acceptance criterion. |
 

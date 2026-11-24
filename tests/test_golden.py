@@ -39,8 +39,13 @@ def test_generation_references_pass_the_checker(case):
     e = case["expected"]
     assert e["behavior"] in {"draft", "ask"}
     assert e["reference_statements"] or e["behavior"] == "ask"
+    proposed = [p["term"] for p in e.get("vocabulary_proposals", [])]
+    agreed = {v.lower() for v in case["input"]["vocabulary"]}
+    assert not {t.lower() for t in proposed} & agreed, "a proposal repeats an agreed term"
+    for p in e.get("vocabulary_proposals", []):
+        assert p["term"] and p["definition"]
     for s in e["reference_statements"]:
-        assert rulespeak.check(s, case["input"]["vocabulary"]).passed, s
+        assert rulespeak.check(s, case["input"]["vocabulary"], proposed=proposed).passed, s
 
 
 @pytest.mark.parametrize("case", [c for c in ALL if c["task"] == "rulespeak_validation"], ids=lambda c: c["id"])
@@ -91,6 +96,41 @@ def test_workbook_round_trip(tmp_path):
     assert "T2-P003" not in cases
     assert cases["T1-P001"] == before["T1-P001"]
     assert batch.read_text(encoding="utf-8").startswith("# DeterminAgent golden set v1")
+
+
+@pytest.mark.skipif(importlib.util.find_spec("openpyxl") is None, reason="openpyxl not installed")
+def test_workbook_proposals_and_older_layouts(tmp_path):
+    from openpyxl import load_workbook
+
+    spec = importlib.util.spec_from_file_location("workbook", ROOT / "tools" / "golden" / "workbook.py")
+    wb_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wb_mod)
+
+    batch = tmp_path / "pilot.yaml"
+    shutil.copy(ROOT / "golden" / "v1" / "pilot.yaml", batch)
+    xlsx = tmp_path / "pilot.xlsx"
+    wb_mod.build(batch, xlsx)
+    wb = load_workbook(xlsx)
+    t1 = wb["T1 Generation"]
+    header = [c.value for c in t1[1]]
+    assert t1.cell(3, header.index("draft vocabulary proposals") + 1).value.startswith("shipment: ")
+    t1.cell(2, header.index("verdict") + 1, "Correct")
+    t1.cell(2, header.index("vocabulary proposals (term: definition, one per line)") + 1, "item: A thing ordered.")
+    wb.save(xlsx)
+    wb_mod.import_labels(batch, xlsx, "tester")
+    cases = {c["id"]: c for c in load(batch)}
+    assert cases["T1-P001"]["expected"]["vocabulary_proposals"] == [{"term": "item", "definition": "A thing ordered."}]
+
+    # A workbook built before the proposals columns existed still imports.
+    wb = load_workbook(xlsx)
+    t1 = wb["T1 Generation"]
+    header = [c.value for c in t1[1]]
+    t1.delete_cols(header.index("vocabulary proposals (term: definition, one per line)") + 1)
+    t1.delete_cols(header.index("draft vocabulary proposals") + 1)
+    t1.cell(2, [c.value for c in t1[1]].index("verdict") + 1, "Agree")
+    wb.save(xlsx)
+    counts = wb_mod.import_labels(batch, xlsx, "tester")
+    assert counts["labelled"] >= 1
 
 
 @pytest.mark.skipif(importlib.util.find_spec("openpyxl") is None, reason="openpyxl not installed")
