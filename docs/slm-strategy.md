@@ -41,6 +41,8 @@ pip install -e ".[models]"
 python -m determinagent.eval run golden/v1/pilot.yaml --model anthropic:claude-sonnet-5-5 --max-cost 3 --out runs/sonnet.jsonl
 ```
 
+**On a free GPU:** [notebooks/slm-screen.ipynb](../notebooks/slm-screen.ipynb) runs the screen on a free Colab or Kaggle T4. It installs Ollama, pulls each model, runs and scores the cases, and zips the run files for download. An optional cell exposes the Ollama server through a Cloudflare quick tunnel, so the runner can use it from elsewhere through `OLLAMA_BASE_URL`.
+
 Model specs are `ollama:<model>`, `openai-compat:<model>@<base_url>` (hosted providers or vLLM, with the key in `DETERMINAGENT_API_KEY`) and `anthropic:<model>`. For a self-hosted model, set `DETERMINAGENT_PRICE_IN` and `DETERMINAGENT_PRICE_OUT` (USD per million tokens) from the hosting cost, so its cost is comparable with the LLM baseline.
 
 ## Shortlist

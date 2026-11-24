@@ -9,7 +9,14 @@ from determinagent import contracts, prompts
 from determinagent.eval import score_run
 from determinagent.eval.__main__ import main
 from determinagent.eval.runner import REPLY_SCHEMAS, prepare, run, run_case
-from determinagent.models import AnthropicAdapter, FakeAdapter, ModelError, OpenAICompatAdapter, from_spec
+from determinagent.models import (
+    AnthropicAdapter,
+    FakeAdapter,
+    ModelError,
+    OpenAICompatAdapter,
+    from_spec,
+    strip_thinking,
+)
 
 ROOT = Path(__file__).parent.parent
 CASES = yaml.safe_load((ROOT / "golden" / "v1" / "pilot.yaml").read_text(encoding="utf-8"))["cases"]
@@ -221,3 +228,15 @@ def test_cli_dry_run(capsys):
     golden = str(ROOT / "golden/v1/pilot.yaml")
     rc = main(["run", golden, "--model", "ollama:x", "--task", "gherkin_requirements", "--dry-run"])
     assert rc == 0 and "20 cases selected" in capsys.readouterr().out
+
+
+def test_strip_thinking():
+    assert strip_thinking('<think>\nhmm\n</think>\n{"a": 1}') == '{"a": 1}'
+    assert strip_thinking('{"a": "</think>"}') == '{"a": "</think>"}'
+
+
+def test_from_spec_env(monkeypatch):
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://gpu:11434/v1")
+    monkeypatch.setenv("DETERMINAGENT_EXTRA_BODY", '{"reasoning_effort": "none"}')
+    a = from_spec("ollama:qwen3:0.6b")
+    assert a.base_url == "http://gpu:11434/v1" and a.extra_body == {"reasoning_effort": "none"}

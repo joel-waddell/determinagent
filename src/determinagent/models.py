@@ -92,6 +92,7 @@ class OpenAICompatAdapter:
     temperature: float = 0.0
     max_tokens: int = 4096
     timeout_s: float = 120.0
+    extra_body: dict[str, Any] = field(default_factory=dict)
     name: str = ""
 
     def __post_init__(self) -> None:
@@ -107,6 +108,7 @@ class OpenAICompatAdapter:
                 "type": "json_schema",
                 "json_schema": {"name": schema_name, "schema": schema, "strict": True},
             },
+            **self.extra_body,
         }
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -126,6 +128,7 @@ class OpenAICompatAdapter:
             text = choice["message"]["content"] or ""
         except (KeyError, IndexError, TypeError) as e:
             raise ModelError(f"{self.name}: unexpected reply shape") from e
+        text = strip_thinking(text)
         usage = data.get("usage") or {}
         tin, tout = int(usage.get("prompt_tokens", 0)), int(usage.get("completion_tokens", 0))
         return Completion(
@@ -137,6 +140,13 @@ class OpenAICompatAdapter:
             model=data.get("model", self.model),
             stop_reason=choice.get("finish_reason"),
         )
+
+
+def strip_thinking(text: str) -> str:
+    """Drop a leading <think>...</think> block. Reasoning models served locally
+    (Qwen3, for one) may put their thinking in the content field."""
+    head, sep, tail = text.partition("</think>")
+    return tail.strip() if sep and "<think>" in head else text
 
 
 # USD per million tokens: input, output, cache read, 5-minute cache write.
@@ -229,19 +239,24 @@ def from_spec(spec: str) -> Adapter:
     ``anthropic:<model>``, ``ollama:<model>`` (http://localhost:11434/v1), or
     ``openai-compat:<model>@<base_url>``. Prices for openai-compat come from
     DETERMINAGENT_PRICE_IN and DETERMINAGENT_PRICE_OUT, the key from
-    DETERMINAGENT_API_KEY.
+    DETERMINAGENT_API_KEY. DETERMINAGENT_EXTRA_BODY (a JSON object) is merged
+    into each request, DETERMINAGENT_TIMEOUT_S sets the timeout, and
+    OLLAMA_BASE_URL points ollama: specs at a remote server.
     """
     kind, _, rest = spec.partition(":")
     if kind == "anthropic" and rest:
         return AnthropicAdapter(model=rest)
     env = os.environ
-    prices = {
+    opts: dict[str, Any] = {
         "price_in": float(env.get("DETERMINAGENT_PRICE_IN", 0)),
         "price_out": float(env.get("DETERMINAGENT_PRICE_OUT", 0)),
+        "extra_body": json.loads(env.get("DETERMINAGENT_EXTRA_BODY", "{}")),
+        "timeout_s": float(env.get("DETERMINAGENT_TIMEOUT_S", 120)),
     }
     if kind == "ollama" and rest:
-        return OpenAICompatAdapter("http://localhost:11434/v1", rest, name=f"ollama:{rest}", **prices)
+        base = env.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+        return OpenAICompatAdapter(base, rest, name=f"ollama:{rest}", **opts)
     if kind == "openai-compat" and "@" in rest:
         model, _, url = rest.partition("@")
-        return OpenAICompatAdapter(url, model, api_key=env.get("DETERMINAGENT_API_KEY"), **prices)
+        return OpenAICompatAdapter(url, model, api_key=env.get("DETERMINAGENT_API_KEY"), **opts)
     raise ValueError(f"Unknown model spec {spec!r}")
