@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:determinagent:contracts:v1:governance-change",
+  "title": "DeterminAgent v1 governance register entry",
+  "description": "One logged change, linked to the receipts that triggered it and to its gate results (program of work, Governance and change control).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "change_id", "change_type", "artifact", "from_version", "to_version", "proposed_at", "proposed_by", "gate", "approval", "status"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "change_id": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/id" },
+    "change_type": { "enum": ["routing_config", "prompt_or_skill_config", "harness_code", "golden_set", "conformance_profile"] },
+    "failure_layer": { "enum": ["harness", "context", "routing"], "description": "Phase 3.1 layer of the failure class, when the change comes from the loop." },
+    "failure_class": { "type": "string" },
+    "artifact": { "type": "string", "minLength": 1, "description": "Path or name of the versioned artifact." },
+    "from_version": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" },
+    "to_version": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" },
+    "diff_ref": { "type": "string" },
+    "triggering_receipts": { "type": "array", "items": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/sha256" } },
+    "proposed_at": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/timestamp" },
+    "proposed_by": { "type": "string", "minLength": 1 },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result"],
+      "properties": {
+        "result": { "enum": ["pass", "fail", "not_run"] },
+        "golden_set_version": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["baseline", "candidate"],
+            "properties": {
+              "baseline": { "type": "number" },
+              "candidate": { "type": "number" },
+              "tolerance": { "type": "number" },
+              "within_tolerance": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required"],
+      "properties": {
+        "required": { "enum": ["none", "spot_review", "human_review", "code_review"] },
+        "by": { "type": "string" },
+        "at": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/timestamp" }
+      }
+    },
+    "rollout": { "enum": ["shadow", "canary", "full", "rolled_back"] },
+    "status": { "enum": ["proposed", "approved", "applied", "rejected", "rolled_back"] },
+    "rollback_to": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/semver" }
+  },
+  "allOf": [
+    {
+      "description": "Harness changes and golden-set changes are never applied without a person (governance table).",
+      "if": { "properties": { "change_type": { "enum": ["harness_code", "golden_set"] }, "status": { "const": "applied" } } },
+      "then": { "properties": { "approval": { "required": ["required", "by", "at"], "properties": { "required": { "enum": ["human_review", "code_review"] } } } } }
+    },
+    {
+      "description": "Nothing is applied without a passing gate.",
+      "if": { "properties": { "status": { "const": "applied" } } },
+      "then": { "properties": { "gate": { "properties": { "result": { "const": "pass" } } } } }
+    }
+  ]
+}

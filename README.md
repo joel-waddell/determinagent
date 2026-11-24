@@ -9,7 +9,9 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | Phase | Workstream | State |
 | --- | --- | --- |
 | 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review; case labels pending |
-| 0 Foundations | 0.2 to 0.7 | Not started |
+| 0 Foundations | 0.2 Golden evaluation set | Design set; pilot batch of 60 drafted, awaiting labels ([docs](docs/golden-set.md)) |
+| 0 Foundations | 0.3 to 0.6 | Not started |
+| 0 Foundations | 0.7 Contracts | v1.0 release candidate; freezes after 0.6 ([docs](docs/contracts.md)) |
 | 1 to 4 | | Not started |
 
 ## The POC domains
@@ -53,13 +55,16 @@ Both CLIs print the verdict as the same JSON and exit 0 when the input is confor
 ## Layout
 
 ```
-docs/                     plan, domain specs, effort actuals
+docs/                     plan, domain specs, golden-set design, effort actuals
+golden/v1/                golden evaluation set batches (YAML)
+tools/golden/             labelling workbook builder and importer
 js/                       JavaScript core
   src/conformance/        deterministic checkers
   bin/                    CLI
   test/                   tests, including the Python parity test
 src/determinagent/        Python core
   spec/                   versioned conformance profiles (YAML), shared by both cores
+  contracts/v1/           JSON Schema contracts, shared by both cores
   conformance/            deterministic checkers
 tests/                    Python tests
   fixtures/               test cases shared by both cores
