@@ -12,6 +12,7 @@ label.status "labelled". Rows left blank stay drafts.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -84,6 +85,25 @@ SHEETS = {
             ("notes", 40, None),
         ],
     ),
+    "js_generation": (
+        "J2 JavaScript",
+        [
+            ("id", 12, lambda c: c["id"]),
+            ("stratum", 14, lambda c: c["stratum"]),
+            ("spec (what the model sees)", 60, lambda c: _spec_text(c["input"]["spec"])),
+            ("draft behavior", 10, lambda c: c["expected"]["behavior"]),
+            ("draft reference solution", 60, lambda c: c["expected"].get("reference_solution") or ""),
+            ("draft hidden tests", 60, lambda c: _tests_text(c["expected"])),
+            ("mutation check", 24, lambda c: _mutation_text(c["expected"])),
+            ("draft note", 35, lambda c: c.get("draft_note") or ""),
+        ],
+        [
+            ("verdict", 10, VERDICTS),
+            ("behavior", 10, BEHAVIORS),
+            ("changes to the spec, reference or tests", 55, None),
+            ("notes", 40, None),
+        ],
+    ),
     "gherkin_requirements": (
         "T3 Gherkin",
         [
@@ -116,7 +136,59 @@ README = [
     "behavior (T1, T3): draft = the system should produce output; ask = it should ask a clarifying question instead.",
     "RS ids: comma-separated, e.g. RS-04, RS-12.",
     "Checker result (T2) is what the deterministic checker returns today. It is shown for context, not as the answer.",
+    "J2 JavaScript: the model sees only the spec column. A case is right when the spec is clear enough to implement,",
+    "  the reference solution is correct, and the hidden tests check what the behavior promises.",
+    "  Agree if all three hold.",
+    "  Correct: set behavior (draft or ask) and/or describe what to change. Claude applies it and the case comes back",
+    "  for a quick re-check. ask = the spec leaves a decision open, so the model should ask instead of writing code.",
+    "  Mutation check: how many one-token changes to the reference the tests catch.",
+    "  Changes that cannot alter any result are listed as equivalent, with the reason.",
 ]
+
+
+def _value(v) -> str:
+    return json.dumps(v, ensure_ascii=False)
+
+
+def _spec_text(spec: dict) -> str:
+    params = ", ".join(f"{p['name']}{'?' if p.get('optional') else ''}: {p['type']}" for p in spec["params"])
+    head = f"{'async ' if spec.get('async') else ''}{spec['name']}({params}) -> {spec['returns']['type']}"
+    if spec.get("export") == "default":
+        head += "  [default export]"
+    lines = [head, "", spec["behavior"]]
+    if spec.get("examples"):
+        lines.append("")
+        for ex in spec["examples"]:
+            args = ", ".join(_value(a) for a in ex["args"])
+            res = f"throws {ex['throws']}" if "throws" in ex else _value(ex["returns"])
+            lines.append(f"{spec['name']}({args}) -> {res}")
+    for c in spec.get("constraints", []):
+        lines.append(f"Constraint: {c}")
+    return "\n".join(lines)
+
+
+def _tests_text(e: dict) -> str:
+    if e["behavior"] == "ask":
+        return "Open questions:\n" + "\n".join(f"- {q}" for q in e.get("open_questions", []))
+    lines = []
+    for t in e.get("hidden_tests", []):
+        if "code" in t:
+            lines.append(f"{t['name']}:\n" + "\n".join(f"    {x}" for x in t["code"].rstrip().splitlines()))
+        else:
+            args = ", ".join(_value(a) for a in t["args"])
+            res = f"throws {t['throws']}" if "throws" in t else _value(t["returns"])
+            lines.append(f"{t['name']}: ({args}) -> {res}")
+    return "\n".join(lines)
+
+
+def _mutation_text(e: dict) -> str:
+    m = e.get("mutation")
+    if not m:
+        return ""
+    text = f"{m['killed']} of {m['mutants']} caught"
+    if m.get("equivalent"):
+        text += f"; {m['equivalent']} equivalent ({e.get('equivalent_note', '')})"
+    return text
 
 
 def _requirement_text(r: dict) -> str:
@@ -137,8 +209,10 @@ def build(batch_path: Path, out_path: Path) -> None:
         ws.cell(i, 1, line).font = Font(bold=(i == 1), size=14 if i == 1 else 11)
     ws.column_dimensions["A"].width = 140
     for task, (title, draft_cols, expert_cols) in SHEETS.items():
-        sh = wb.create_sheet(title)
         cases = [c for c in data["cases"] if c["task"] == task]
+        if not cases:
+            continue
+        sh = wb.create_sheet(title)
         cols = [(h, w, GREY) for h, w, _ in draft_cols] + [(h, w, YELLOW) for h, w, _ in expert_cols]
         for j, (h, w, fill) in enumerate(cols, 1):
             cell = sh.cell(1, j, h)
@@ -161,6 +235,17 @@ def build(batch_path: Path, out_path: Path) -> None:
     wb.save(out_path)
 
 
+def _literals(obj):
+    """Multi-line strings (features, reference solutions, test snippets) as YAML block literals."""
+    if isinstance(obj, dict):
+        return {k: _literals(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_literals(v) for v in obj]
+    if isinstance(obj, str) and "\n" in obj:
+        return _Lit(obj)
+    return obj
+
+
 def _split_lines(v: str) -> list[str]:
     return [x.strip() for x in str(v).splitlines() if x.strip()]
 
@@ -173,9 +258,11 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
     data = yaml.safe_load(batch_path.read_text(encoding="utf-8"))
     by_id = {c["id"]: c for c in data["cases"]}
     wb = load_workbook(xlsx_path, data_only=True)
-    counts = {"labelled": 0, "dropped": 0, "unlabelled": 0}
+    counts = {"labelled": 0, "revise": 0, "dropped": 0, "unlabelled": 0}
     drop: set[str] = set()
     for task, (title, draft_cols, expert_cols) in SHEETS.items():
+        if title not in wb.sheetnames:
+            continue
         sh = wb[title]
         n = len(draft_cols)
         for row in sh.iter_rows(min_row=2, values_only=True):
@@ -192,6 +279,17 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
                 counts["dropped"] += 1
                 continue
             e = c["expected"]
+            if task == "js_generation":
+                behavior, changes, notes = vals
+                if verdict == "Correct" and behavior:
+                    e["behavior"] = behavior
+                # Code and test changes are applied by hand, then the case is re-checked.
+                status = "revise" if verdict == "Correct" and (changes or behavior) else "labelled"
+                c["label"] = {"status": status, "labelled_by": labeller, "verdict": verdict, "notes": notes}
+                if changes:
+                    c["label"]["requested_changes"] = str(changes)
+                counts["labelled" if status == "labelled" else "revise"] += 1
+                continue
             if verdict == "Correct":
                 if task == "rulespeak_validation":
                     form, ids, reason, _ = vals
@@ -225,7 +323,8 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
     header = "".join(
         line + "\n" for line in batch_path.read_text(encoding="utf-8").splitlines() if line.startswith("#")
     )
-    batch_path.write_text(header + yaml.dump(data, sort_keys=False, allow_unicode=True, width=120), encoding="utf-8")
+    body = yaml.dump(_literals(data), sort_keys=False, allow_unicode=True, width=120)
+    batch_path.write_text(header + body, encoding="utf-8")
     return counts
 
 

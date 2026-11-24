@@ -7,6 +7,7 @@
 //   {"code": ..., "spec": {...}, "tests": [...], "limits": {...}}   -> one js_execution report
 //   [job, job, ...]                                                -> an array of reports, in order
 //   {"info": true}                                                 -> how this machine isolates code
+//   {"mutants": code, "max": 80}                                   -> single-token mutants of code
 //
 // Jobs in a batch run up to --concurrency at a time (default 4). Exit code 0
 // on success, 2 on bad input.
@@ -16,6 +17,7 @@ import { parseArgs } from 'node:util'
 
 import { defaultProfile } from '../src/conformance/javascript.js'
 import { execute, isolation } from '../src/sandbox/index.js'
+import { mutants } from '../src/sandbox/mutate.js'
 
 export async function runJobs(jobs, concurrency = 4) {
   const out = new Array(jobs.length)
@@ -43,6 +45,8 @@ export async function main(argv = process.argv.slice(2), { stdin = () => readFil
   let result
   if (input && !Array.isArray(input) && input.info) {
     result = { ...isolation(), profile_version: defaultProfile().version }
+  } else if (input && typeof input.mutants === 'string') {
+    result = mutants(input.mutants, { max: input.max ?? 80 })
   } else if (Array.isArray(input)) {
     result = await runJobs(input, Number(opts.concurrency) || 4)
   } else if (input && typeof input.code === 'string') {

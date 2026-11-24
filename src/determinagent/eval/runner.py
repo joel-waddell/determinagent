@@ -13,6 +13,10 @@ times. The model never decides anything a checker can decide:
   prompt and the findings in the output; the model settles only the form
   verdict;
 * Gherkin: conformance is the profile's verdict, not the model's.
+* JavaScript (J2): the module is linted and run in the 0.8 sandbox against
+  the spec's visible examples. Lint errors, failing examples and violations
+  are the retry feedback. Hidden tests are never run here, so nothing about
+  them reaches the model; the scorer runs them.
 
 Records follow docs/evaluation.md, so ``score`` and ``compare`` read them.
 """
@@ -26,7 +30,7 @@ from typing import Any
 
 import jsonschema
 
-from .. import contracts, prompts
+from .. import contracts, prompts, sandbox
 from ..conformance import gherkin, rulespeak
 from ..golden import to_request
 from ..models import Adapter, ModelError
@@ -109,7 +113,50 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
             "questions": _QUESTIONS,
         },
     },
+    "js_generation": {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["code", "assumptions", "questions"],
+        "properties": {
+            "code": {"type": "string", "description": "The whole ES module, or an empty string when asking."},
+            "assumptions": _STR_LIST,
+            "questions": _QUESTIONS,
+        },
+    },
 }
+
+# Visible-example reports, keyed by (code, spec), so a reply is run once.
+_JS_REPORTS: dict[tuple[str, str], dict[str, Any]] = {}
+
+
+def _visible_report(code: str, spec: dict[str, Any]) -> dict[str, Any]:
+    key = (code, json.dumps(spec, sort_keys=True))
+    if key not in _JS_REPORTS:
+        if len(_JS_REPORTS) > 256:
+            _JS_REPORTS.clear()
+        _JS_REPORTS[key] = sandbox.execute(code, spec=spec, tests=sandbox.tests_from_spec(spec))
+    return _JS_REPORTS[key]
+
+
+def _js_problems(report: dict[str, Any]) -> list[str]:
+    out = []
+    if not report["parsed"]:
+        f = report["lint"][0] if report["lint"] else None
+        where = f" (line {f['range']['start_line']}: {f['message']})" if f else ""
+        return [f"the module does not parse{where}"]
+    for f in sandbox.lint_errors(report):
+        out.append(f"line {f['range']['start_line']}: {f['code']} {f['message']}")
+    for t in report["tests"]:
+        if t["status"] != "pass":
+            out.append(f"{t['name']} {t['status']}: {t.get('message', '')}".rstrip(": "))
+    for v in report["violations"]:
+        out.append(f"the sandbox blocked a {v} attempt; use only the ECMAScript built-ins")
+    return out
+
+
+def _module(code: str, spec: dict[str, Any]) -> dict[str, Any]:
+    stem = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in spec["name"])[:61] or "module"
+    return {"code": code, "filename": f"{stem}.js"}
 
 
 def _questions(qs: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -176,6 +223,14 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
             missing = sorted(set(range(n)) - covered)
             if missing:
                 out.append(f"acceptance criteria {missing} are not covered by any scenario")
+    elif task == "js_generation":
+        code, qs = reply["code"].strip(), reply["questions"]
+        if not code and not qs:
+            out.append("return a module or at least one question")
+        if len(reply["code"]) > 20000:
+            out.append("the module is longer than 20,000 characters")
+        elif code:
+            out += _js_problems(_visible_report(reply["code"], pay["spec"]))
     return out
 
 
@@ -212,6 +267,16 @@ def _output(task: str, reply: dict[str, Any], request: dict[str, Any], chk: rule
         if reply["questions"]:
             result["questions"] = _questions(reply["questions"])
         return {"results": [result]}
+    if task == "js_generation":
+        spec = request["payload"]["spec"]
+        js: dict[str, Any] = {"questions": _questions(reply["questions"])}
+        if reply["code"].strip():
+            js["module"] = _module(reply["code"], spec)
+            js["execution"] = _visible_report(reply["code"], spec)
+        assumptions = [a[:500] for a in reply["assumptions"] if a]
+        if assumptions:
+            js["assumptions"] = assumptions
+        return js
     out: dict[str, Any] = {
         "covered_criteria": [c for c in reply["covered_criteria"] if c["criterion"] >= 0],
         "questions": _questions(reply["questions"]),

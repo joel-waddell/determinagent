@@ -16,6 +16,7 @@ echo '{"info": true}' | node js/bin/js-sandbox.js      # how this machine isolat
 
 ```python
 from determinagent import sandbox
+
 report = sandbox.execute(code, spec=spec, tests=sandbox.tests_from_spec(spec) + hidden_tests)
 sandbox.accepted(report)
 ```
@@ -61,7 +62,7 @@ A test is one of three shapes. Values are JSON, and values JSON cannot hold use 
 | --- | --- |
 | `{name, args, returns}` | The function returns a value deeply equal to `returns`. For an async spec it must return a Promise that resolves to it. |
 | `{name, args, throws}` | The function throws (or for async, rejects). `throws: "RangeError"` requires that error name. `"RangeError: negative"` also requires the message to contain "negative". Any other text must appear in the message. |
-| `{name, code}` | A snippet that runs as the body of `function (fn, assert)` inside the context does not throw. `assert` has `equal` (deep), `notEqual`, `ok`, `throws`, `rejects` and `deepClone`. Snippets check what examples cannot express, such as "does not mutate its input". They come from the golden set, never from the model. |
+| `{name, code}` | The snippet does not throw or reject. It runs inside the context as the body of `async function (fn, assert)`, so it may `await`. `assert` has `equal` (deep), `notEqual`, `ok`, `throws`, `rejects` and `deepClone`. Snippets check what examples cannot express, such as "does not mutate its input". They come from the golden set, never from the model. |
 
 `$js` values: `{"$js": "undefined"}`, `"NaN"`, `"Infinity"`, `"-Infinity"`, `"-0"`, `{"$js": "bigint", "value": "12"}`, `{"$js": "Date", "value": "2026-03-01T00:00:00Z"}`, `{"$js": "Map", "entries": [[k, v]]}` and `{"$js": "Set", "values": [...]}`.
 

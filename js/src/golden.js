@@ -13,6 +13,8 @@ export function toRequest(c) {
     if (inp.vocabulary?.length) payload.vocabulary = [...inp.vocabulary]
   } else if (c.task === 'gherkin_requirements') {
     payload = { requirement: { ...inp.requirement } }
+  } else if (c.task === 'js_generation') {
+    payload = { spec: { ...inp.spec } }
   } else {
     throw new Error(`Unknown task "${c.task}"`)
   }

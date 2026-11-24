@@ -456,7 +456,7 @@ async function main() {
       let r
       try {
         if (t.code !== undefined) {
-          const f = new vm.Script(`(function (fn, assert) { 'use strict';\n${t.code}\n})`, {
+          const f = new vm.Script(`(async function (fn, assert) { 'use strict';\n${t.code}\n})`, {
             filename: `test-${i}.js`,
           }).runInContext(context)
           api.registerSnippet(i, f)
