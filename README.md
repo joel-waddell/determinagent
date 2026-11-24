@@ -9,7 +9,8 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | Phase | Workstream | State |
 | --- | --- | --- |
 | 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review; case labels pending |
-| 0 Foundations | 0.2 to 0.7 | Not started |
+| 0 Foundations | 0.2 Golden evaluation set | Design set; pilot batch of 60 drafted, awaiting labels ([docs](docs/golden-set.md)) |
+| 0 Foundations | 0.3 to 0.7 | Not started |
 | 1 to 4 | | Not started |
 
 ## The POC domains
@@ -53,7 +54,9 @@ Both CLIs print the verdict as the same JSON and exit 0 when the input is confor
 ## Layout
 
 ```
-docs/                     plan, domain specs, effort actuals
+docs/                     plan, domain specs, golden-set design, effort actuals
+golden/v1/                golden evaluation set batches (YAML)
+tools/golden/             labelling workbook builder and importer
 js/                       JavaScript core
   src/conformance/        deterministic checkers
   bin/                    CLI
