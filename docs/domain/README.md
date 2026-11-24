@@ -4,6 +4,7 @@ This is workstream 0.1 of the [program of work](../program-of-work.md). It defin
 
 - [RuleSpeak](rulespeak.md): sentence templates, keywords and defect taxonomy
 - [Gherkin](gherkin.md): official grammar plus the DeterminAgent profile
+- [JavaScript](javascript.md): the J1–J3 profile, ESLint rule set and defect taxonomy (Amendment 1), with the [execution sandbox](../sandbox.md)
 
 ## What is deterministic and what is not
 

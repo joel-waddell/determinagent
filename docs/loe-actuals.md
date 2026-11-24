@@ -12,3 +12,5 @@ The baseline estimates are in [program-of-work.md](program-of-work.md#level-of-e
 | 0.3 Baselines and targets | 6–10 | 1 | Harness, gate, oracle and checker baselines. Model baselines pending model access. |
 | 0.4 SLM strategy | 8–14 | 1 | Shortlist, selection method, prompts v1, adapters (Ollama/OpenAI-style, Claude) and the runner with checker-driven retries. Screening runs pending model access. |
 | 0.7 Contracts, JS (Amendment 1) | 3–4 (tranche 1 share) | 1 | J1–J3 inputs and outputs, sandbox report, handoff `js_module`, two reason codes; examples in both cores. |
+| 0.1 Domain specification, JS (Amendment 1) | 4–6 (tranche 1 share) | 1 (shared with 0.8) | JS profile v0.1.0 as YAML: ESLint rule set, defect taxonomy, export rule, checker and fixtures, in `js/` only. |
+| 0.8 Execution sandbox | 6–12 | 1 (shared with 0.1) | Child process with permission model, network namespace, heap limit; vm context with fixed clock, seeded random and host-global traps; escape suite; Python bridge. |

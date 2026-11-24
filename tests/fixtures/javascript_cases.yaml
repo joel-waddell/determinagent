@@ -1,0 +1,218 @@
+# JS checker fixtures (profile 0.1.0). Each case lists the exact set of codes
+# the checker must report. "spec" is the J2 function spec the export check
+# uses; the default below applies when a case has none.
+default_spec:
+  name: total
+  params:
+    - {name: items, type: "number[]"}
+  returns: {type: number}
+  behavior: Sum the numbers.
+
+clean:
+  - name: function declaration
+    code: |
+      export function total(items) {
+        let sum = 0
+        for (const x of items) sum += x
+        return sum
+      }
+  - name: arrow function
+    code: |
+      export const total = (items) => items.reduce((a, b) => a + b, 0)
+  - name: export list
+    code: |
+      function total(items) {
+        return items.length
+      }
+      export { total }
+  - name: default export
+    spec: {name: total, export: default, params: [{name: items, type: "number[]"}], returns: {type: number}, behavior: x}
+    code: |
+      export default function total(items) {
+        return items.length
+      }
+  - name: async when the spec is async
+    spec: {name: total, async: true, params: [{name: items, type: "number[]"}], returns: {type: "Promise<number>"}, behavior: x}
+    code: |
+      export async function total(items) {
+        return items.length
+      }
+  - name: helpers and classes are fine
+    code: |
+      class Acc {
+        constructor() {
+          this.n = 0
+        }
+      }
+      const add = (acc, x) => {
+        acc.n += x
+        return acc
+      }
+      export function total(items) {
+        return items.reduce(add, new Acc()).n
+      }
+  - name: smart equality allows null checks
+    code: |
+      export function total(items) {
+        if (items == null) return 0
+        return items.length
+      }
+
+findings:
+  - name: parse error
+    code: "export function total(items) { return items."
+    codes: [JS-SYN-001]
+  - name: missing export
+    code: "export function sum(items) { return items.length }"
+    codes: [JS-MOD-001]
+  - name: default instead of named
+    code: "export default function total(items) { return items.length }"
+    codes: [JS-MOD-002]
+  - name: named instead of default
+    spec: {name: total, export: default, params: [{name: items, type: "number[]"}], returns: {type: number}, behavior: x}
+    code: "export function total(items) { return items.length }"
+    codes: [JS-MOD-002]
+  - name: async when the spec is sync
+    code: "export async function total(items) { return items.length }"
+    codes: [JS-MOD-003]
+  - name: static import
+    code: |
+      import { readFileSync } from 'node:fs'
+      export function total(items) {
+        return readFileSync(items).length
+      }
+    codes: [JS-MOD-004]
+  - name: dynamic import
+    code: "export function total(items) { return import('node:' + items) }"
+    codes: [JS-MOD-004]
+  - name: not a function
+    code: "export const total = 42"
+    codes: [JS-MOD-005]
+  - name: parameter count
+    code: "export function total(items, start) { return items.length + start }"
+    codes: [JS-MOD-006]
+  - name: eval
+    code: "export function total(items) { return eval(items) }"
+    codes: [JS-SEC-001]
+  - name: Function constructor
+    code: "export function total(items) { return new Function(items)() }"
+    codes: [JS-SEC-001]
+  - name: process
+    code: "export function total(items) { return items.length + process.pid }"
+    codes: [JS-SEC-002]
+  - name: fetch
+    code: "export function total(items) { return fetch(items) }"
+    codes: [JS-SEC-002]
+  - name: require
+    code: "export function total(items) { return require(items) }"
+    codes: [JS-SEC-002]
+  - name: extend a built-in prototype
+    code: |
+      Array.prototype.sum = function () {
+        return 0
+      }
+      export function total(items) {
+        return items.length
+      }
+    codes: [JS-SEC-003]
+  - name: reassign a global
+    code: |
+      export function total(items) {
+        undefined = items
+        return 0
+      }
+    codes: [JS-SEC-004]
+  - name: clock and randomness
+    code: "export function total(items) { return items.length + Date.now() * Math.random() }"
+    codes: [JS-DET-001]
+  - name: undefined variable
+    code: "export function total(items) { return items.length + count }"
+    codes: [JS-COR-001]
+  - name: const reassigned
+    code: |
+      export function total(items) {
+        const n = 0
+        n = items.length
+        return n
+      }
+    codes: [JS-COR-002]
+  - name: duplicate key
+    code: "export function total(items) { return { a: 1, a: items }.a }"
+    codes: [JS-COR-003]
+  - name: unreachable code
+    code: |
+      export function total(items) {
+        return items.length
+        items.pop()
+      }
+    codes: [JS-COR-004]
+  - name: NaN comparison
+    code: "export function total(items) { return items === NaN ? 0 : 1 }"
+    codes: [JS-COR-005]
+  - name: fall through
+    code: |
+      export function total(items) {
+        let n = 0
+        switch (items.length) {
+          case 0:
+            n = 1
+          case 1:
+            n = 2
+        }
+        return n
+      }
+    codes: [JS-COR-006]
+  - name: assignment in a condition
+    code: |
+      export function total(items) {
+        let n
+        if (n = items.length) return n
+        return 0
+      }
+    codes: [JS-COR-007]
+  - name: array callback without return
+    code: "export function total(items) { return items.map((x) => { x + 1 }) }"
+    codes: [JS-COR-010]
+  - name: constant condition
+    code: |
+      export function total(items) {
+        if (true) return items.length
+        return 0
+      }
+    codes: [JS-COR-014]
+  - name: unused variable
+    code: |
+      export function total(items) {
+        const unused = 1
+        return items.length
+      }
+    codes: [JS-STY-001]
+  - name: loose equality
+    code: "export function total(items) { return items.length == '0' ? 0 : 1 }"
+    codes: [JS-STY-002]
+  - name: var and let
+    code: |
+      export function total(items) {
+        var a = items.length
+        let b = a
+        return b
+      }
+    codes: [JS-STY-003, JS-STY-004]
+  - name: console
+    code: |
+      export function total(items) {
+        console.log(items)
+        return items.length
+      }
+    codes: [JS-STY-005]
+  - name: hasOwnProperty on the object
+    code: "export function total(items) { return items.hasOwnProperty('length') ? 1 : 0 }"
+    codes: [JS-STY-006]
+  - name: empty block
+    code: |
+      export function total(items) {
+        if (items.length) {
+        }
+        return 0
+      }
+    codes: [JS-STY-007]

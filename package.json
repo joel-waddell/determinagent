@@ -11,10 +11,13 @@
     ".": "./js/src/index.js",
     "./conformance/rulespeak": "./js/src/conformance/rulespeak.js",
     "./conformance/gherkin": "./js/src/conformance/gherkin.js",
-    "./contracts": "./js/src/contracts.js"
+    "./contracts": "./js/src/contracts.js",
+    "./conformance/javascript": "./js/src/conformance/javascript.js",
+    "./sandbox": "./js/src/sandbox/index.js"
   },
   "bin": {
-    "determinagent": "./js/bin/determinagent.js"
+    "determinagent": "./js/bin/determinagent.js",
+    "determinagent-js-sandbox": "./js/bin/js-sandbox.js"
   },
   "files": [
     "js/bin",
@@ -31,11 +34,12 @@
     "@cucumber/messages": "^35.0.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "eslint": "^9.0.0",
+    "espree": "^10.0.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "eslint": "^9.0.0",
     "globals": "^16.0.0"
   }
 }
