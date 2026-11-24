@@ -56,6 +56,23 @@ The candidates are open-weight models from 1.7B to 12B parameters with a licence
 | Phi-4-mini | 3.8B | MIT (check the model card) | Strong reasoning for its size |
 | SmolLM3 | 3B | Apache 2.0 | A fully open reference point, with open training data |
 
+### Floor tier: under 1B
+
+The checkers carry much of the load, so the screen also includes a floor tier of models under 1B parameters. A sub-1B model runs on a CPU at a fraction of the cost of the main tier, and it is also the cheapest base model for fine-tuning in 0.5.
+
+| Model | Size | Licence | Why it is on the list |
+| --- | --- | --- | --- |
+| Qwen3 | 0.6B | Apache 2.0 | The smallest member of the main tier's family, so results compare directly with 1.7B–8B |
+| SmolLM2 | 360M | Apache 2.0 | Fully open, and small enough to show where the floor is |
+| Gemma 3 | 270M | Gemma terms of use (check before adoption) | Built to be fine-tuned for narrow tasks |
+
+Expectations differ by task:
+
+- **T2 validation** is the best fit for the floor tier. It is a three-way choice with the checker's evidence already in the prompt, so a sub-1B model may meet the targets on prompt work alone.
+- **T1 generation** and **T3 Gherkin** ask the model to write. A sub-1B model is likely to fail the checkers more often and need more retries. Constrained decoding and checker feedback make the result measurable instead of guessable, and the screen records the retry rate and first-pass rate.
+
+If a floor model misses on prompt work alone but comes close, it becomes the first fine-tuning candidate. Its training cost is small, and its serving cost is the lowest of any option.
+
 These were left out:
 
 - **Tiny Aya** has a non-commercial licence (CC-BY-NC).
@@ -67,8 +84,8 @@ Licences come from the vendors' announcements and need checking against each mod
 
 ## Selection method
 
-1. **Screen.** Run each candidate on the three tasks over the pilot dev cases, with prompt v1, temperature 0, constrained decoding and two retries. That is about 10 models times 60 cases. Record task success, first-pass well-formedness, p95 latency and cost.
-2. **Cut.** For each task, keep the best three, plus any smaller model within 5 points of the best.
+1. **Screen.** Run each candidate on the three tasks over the pilot dev cases, with prompt v1, temperature 0, constrained decoding and two retries. That is about 13 models, the floor tier included, times 60 cases. Record task success, first-pass well-formedness, p95 latency and cost.
+2. **Cut.** For each task, keep the best three, plus any smaller model within 5 points of the best. A floor-tier model that is within 10 points also stays, as a fine-tuning candidate.
 3. **Optimize prompts, on dev only.** Change one thing at a time: the instruction wording, two or three worked examples from dev cases, how the checker evidence is laid out, and the retry feedback. Each kept change becomes a new prompt version (`prompts/v1/<task>.md` front matter), so every run says which prompt it used. Never tune on held-out cases.
 4. **Decide.** For each task, choose the smallest model that meets the gate targets on the held-out split ([config/gate.yaml](../config/gate.yaml)). Compare it with the LLM baseline using the paired McNemar test in `eval compare`. The cost target is 20% of the LLM baseline's cost per request.
 5. **Escalate.** A task with no passing candidate goes to fine-tuning. The best candidate becomes the base model, and the 0.5 readiness verdict says whether that is possible now.
