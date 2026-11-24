@@ -10,7 +10,8 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | --- | --- | --- |
 | 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review; case labels pending |
 | 0 Foundations | 0.2 Golden evaluation set | Design set; pilot batch of 60 drafted, awaiting labels ([docs](docs/golden-set.md)) |
-| 0 Foundations | 0.3 to 0.6 | Not started |
+| 0 Foundations | 0.3 Baselines and targets | Harness and gate built; model-free checker baseline measured ([docs](docs/evaluation.md)); model baselines need model access |
+| 0 Foundations | 0.4 to 0.6 | Not started |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate; freezes after 0.6 ([docs](docs/contracts.md)) |
 | 1 to 4 | | Not started |
 
@@ -58,6 +59,7 @@ Both CLIs print the verdict as the same JSON and exit 0 when the input is confor
 docs/                     plan, domain specs, golden-set design, effort actuals
 golden/v1/                golden evaluation set batches (YAML)
 tools/golden/             labelling workbook builder and importer
+config/gate.yaml          evaluation gate targets and tolerances
 js/                       JavaScript core
   src/conformance/        deterministic checkers
   bin/                    CLI

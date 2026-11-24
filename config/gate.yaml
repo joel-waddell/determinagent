@@ -1,0 +1,21 @@
+# Evaluation gate v1 (Phase 0.3). Targets and tolerances from the program of
+# work's metrics table. Values are fractions unless noted. Recalibrated after
+# the Phase 0 baselines are measured.
+version: 1.0.0
+
+# 300 cases per task cannot resolve a 1-2 point change (docs/golden-set.md):
+# a drop smaller than this is flagged for review instead of failing outright,
+# unless the metric allows no regression at all.
+review_band: 0.03
+
+metrics:
+  routing_accuracy:      {direction: higher, target: 0.99, tolerance: 0.0}
+  wellformed_final:      {direction: higher, target: 1.00, tolerance: 0.0}
+  wellformed_first_pass: {direction: higher, target: 0.95, tolerance: 0.02}
+  task_success:          {direction: higher, target: 0.85, tolerance: 0.01}
+  validation_precision:  {direction: higher, target: 0.90, tolerance: 0.02}
+  validation_recall:     {direction: higher, target: 0.85, tolerance: 0.02}
+  violation_rate:        {direction: lower,  target: 0.01, tolerance: 0.0}
+  cost_per_request:      {direction: lower,  relative_tolerance: 0.10, note: "target is 20% of the LLM baseline"}
+  routing_latency_p95_ms: {direction: lower, target: 50, relative_tolerance: 0.10}
+  latency_p95_ms:        {direction: lower,  relative_tolerance: 0.10}
