@@ -17,12 +17,12 @@ def run(capsys, argv, stdin):
 
 def test_rulespeak_cli(capsys):
     code, out = run(capsys, ["check", "rulespeak"], "Each order must have at least one line item.\n")
-    assert code == 0 and out["conformant"] and out["template_id"] == "RS-T01"
+    assert code == 0 and out["outcome"]["form"] == "conforms" and out["template"]["id"] == "RS-T01"
 
 
 def test_rulespeak_cli_multiple_lines(capsys):
     code, out = run(capsys, ["check", "rulespeak"], "Each order must have a customer.\nOrders ship fast.\n")
-    assert code == 1 and [o["conformant"] for o in out] == [True, False]
+    assert code == 1 and [o["outcome"]["profile_acceptance"] for o in out] == ["accepted", "rejected"]
 
 
 def test_gherkin_cli(capsys):

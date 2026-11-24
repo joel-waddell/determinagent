@@ -4,75 +4,63 @@ import { describe, test } from 'node:test'
 import { check, defaultProfile } from '../src/conformance/rulespeak.js'
 import { fixture, sorted } from './helpers.js'
 
-const CASES = fixture('rulespeak_cases')
+const FIXTURES = fixture('rulespeak_cases')
+const PROFILE = defaultProfile()
+const OUTCOME_KEYS = ['profile_acceptance', 'form', 'guidance_type', 'review_required', 'local_policy']
 
-describe('conformant statements', () => {
-  for (const c of CASES.conformant) {
-    test(c.text, () => {
-      const r = check(c.text)
-      assert.ok(r.conformant, JSON.stringify(r.toDict()))
-      assert.equal(r.templateId, c.template)
-    })
-  }
+function assertChecker(c, result) {
+  const d = result.toDict()
+  const want = c.checker
+  for (const k of OUTCOME_KEYS) if (k in want) assert.equal(d.outcome[k], want[k], `${k}: ${JSON.stringify(d)}`)
+  if ('template' in want) assert.equal(d.template?.id ?? null, want.template)
+  if ('term_hits' in want) assert.deepEqual(d.term_hits, want.term_hits)
+  assert.deepEqual(sorted(result.codes), sorted(want.codes), JSON.stringify(d))
+}
+
+describe('cases', () => {
+  for (const c of FIXTURES.cases) test(`${c.id} ${c.text}`, () => assertChecker(c, check(c.text)))
 })
 
-describe('conformant with warnings', () => {
-  for (const c of CASES.warnings) {
-    test(c.text, () => {
-      const r = check(c.text)
-      assert.ok(r.conformant)
-      assert.equal(r.templateId, c.template)
-      assert.deepEqual(sorted(r.codes), sorted(c.codes))
-    })
-  }
+describe('vocabulary cases', () => {
+  for (const c of FIXTURES.vocabulary_cases) test(c.id, () => assertChecker(c, check(c.text, c.vocabulary)))
 })
 
-describe('defective statements', () => {
-  for (const c of CASES.defective) {
-    test(c.text || '(empty)', () => {
-      const r = check(c.text)
-      assert.ok(!r.conformant)
-      assert.deepEqual(sorted(r.codes), sorted(c.codes), JSON.stringify(r.toDict()))
-    })
+test('every cited RS id exists and reaches a locator', () => {
+  const items = [...Object.values(PROFILE.diagnostics), ...PROFILE.templates.map((t) => ({ rs_refs: t.rsRefs }))]
+  for (const item of items) {
+    for (const ref of item.rs_refs) {
+      assert.match(ref, /^RS-\d\d$/)
+      assert.ok(PROFILE.register[ref]?.source?.length, ref)
+    }
   }
-})
-
-test('every defect code is tested', () => {
-  const tested = new Set([...CASES.defective, ...CASES.warnings].flatMap((c) => c.codes))
-  const untested = Object.keys(defaultProfile().defects).filter(
-    (c) => !tested.has(c) && !['RS-STY-004', 'RS-VOC-001'].includes(c),
-  )
-  assert.deepEqual(untested, [])
+  for (const c of FIXTURES.cases) for (const ref of c.rulespeak.rs_refs) assert.ok(PROFILE.register[ref], c.id)
 })
 
 test('template examples match their own template', () => {
-  for (const t of defaultProfile().templates) {
+  for (const t of PROFILE.templates) {
     const r = check(t.example)
-    assert.ok(r.conformant && r.templateId === t.id, `${t.id}: ${JSON.stringify(r.toDict())}`)
+    assert.equal(r.template?.id, t.id)
+    assert.equal(r.profileAcceptance, 'accepted')
   }
 })
 
-test('slots are extracted', () => {
-  const r = check('An order must not be shipped if the outstanding balance exceeds the credit limit.')
-  assert.equal(r.slots.subject, 'order')
-  assert.equal(r.slots.predicate, 'be shipped')
-  assert.equal(r.slots.cond_kw, 'if')
-  assert.equal(r.slots.condition, 'the outstanding balance exceeds the credit limit')
+test('findings carry the evidence chain', () => {
+  const f = check('A visitor may enter the archive if accompanied by a curator.').findings[0]
+  assert.equal(f.code, 'RS-ADV-001')
+  assert.deepEqual([...f.rsRefs], ['RS-10'])
+  assert.ok(f.source.includes('SF Table 2 forms 4.1–4.2, p. 10'))
 })
 
-test('vocabulary check', () => {
-  const vocab = ['order', 'customer', 'line item']
-  assert.ok(check('Each order must have at least one line item.', vocab).conformant)
-  assert.deepEqual(check('Each shipment must have a carrier.', vocab).codes, ['RS-VOC-001'])
+test('the quantifier is preserved', () => {
+  assert.equal(check('Every employee must complete safety training.').slots.det, 'Every')
 })
 
-test('long statement is a warning only', () => {
+test('word limit is local', () => {
   const r = check(`A customer must ${['provide', ...Array(25).fill('a document')].join(' ')}.`)
-  assert.ok(r.codes.includes('RS-STY-004'))
-  assert.ok(r.conformant)
+  assert.deepEqual(r.codes, ['RS-LOC-001'])
+  assert.ok(r.passed)
 })
 
-test('deterministic', () => {
-  const text = 'A refund may be issued only if the purchase was made within the last 30 days.'
-  assert.deepEqual(check(text).toDict(), check(text).toDict())
+test('fidelity is always unverified', () => {
+  assert.equal(check('Each order must have a customer.').toDict().outcome.fidelity, 'unverified')
 })

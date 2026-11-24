@@ -19,7 +19,7 @@ import json, sys
 from determinagent.conformance import gherkin, rulespeak
 req = json.load(sys.stdin)
 out = {
-  "rulespeak": [rulespeak.check(t).to_dict() for t in req["rulespeak"]],
+  "rulespeak": [rulespeak.check(t, v).to_dict() for t, v in req["rulespeak"]],
   "gherkin": [gherkin.check(s).to_dict() for s in req["gherkin"]],
 }
 json.dump(out, sys.stdout)
@@ -29,13 +29,13 @@ test('Python and JavaScript cores agree on every fixture', { skip: !hasPython &&
   const rs = fixture('rulespeak_cases')
   const gk = fixture('gherkin_cases')
   const req = {
-    rulespeak: [...rs.conformant, ...rs.warnings, ...rs.defective].map((c) => c.text),
+    rulespeak: [...rs.cases, ...rs.vocabulary_cases].map((c) => [c.text, c.vocabulary ?? null]),
     gherkin: [...gk.conformant, ...gk.warnings, ...gk.errors].map((c) => c.source),
   }
   const res = spawnSync(PY, ['-c', PY_SCRIPT], { cwd: ROOT, input: JSON.stringify(req), encoding: 'utf8' })
   assert.equal(res.status, 0, res.stderr)
   const py = JSON.parse(res.stdout)
 
-  req.rulespeak.forEach((t, i) => assert.deepEqual(rulespeak.check(t).toDict(), py.rulespeak[i], t))
+  req.rulespeak.forEach(([t, v], i) => assert.deepEqual(rulespeak.check(t, v).toDict(), py.rulespeak[i], t))
   req.gherkin.forEach((s, i) => assert.deepEqual(gherkin.check(s).toDict(), py.gherkin[i], s))
 })

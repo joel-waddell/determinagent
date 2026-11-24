@@ -1,154 +1,385 @@
-# RuleSpeak conformance profile for DeterminAgent (Phase 0.1).
+# RuleSpeak profile for DeterminAgent, v0.2.0 (Phase 0.1).
 #
-# A machine-readable formalization of the RuleSpeak sentence forms and keyword
-# guidance published by Business Rule Solutions (Ronald G. Ross). It is the
-# deterministic half of RuleSpeak checking: a statement must match one approved
-# sentence template and trip no error-level defect. Whether a statement says
-# what the business intended is semantic work left to the SLM.
+# A deterministic surface checker for a supported subset of RuleSpeak, the
+# business-rule notation of Ronald G. Ross (Business Rule Solutions). It is
+# traced to Joel's derived ruleset, RuleSpeak-Agent.md v2.0 (RS-01 to RS-29),
+# which cites the original sources by locator.
 #
-# Status: draft for domain-expert review. Changing this file changes what
-# "well-formed" means for the golden set, so treat it as versioned config.
-version: 0.1.0
+# Each check returns separate outcomes rather than one verdict:
+#
+#   profile_acceptance  accepted | rejected
+#       Whether the statement fits a template this checker supports. A
+#       rejection is a limit of the checker. It does not say the statement is
+#       bad RuleSpeak.
+#   form                conforms | needs_revision | undetermined
+#       RuleSpeak form, from "form" diagnostics only (a style preference alone
+#       is not a form defect). undetermined means a form question needs a
+#       reviewer, or the profile could not parse the statement and found no
+#       form defect.
+#   guidance_type       rule | advice | null
+#       Business rule or Statement of Advice, from the matched template.
+#   fidelity            unverified, always
+#       A surface checker has no independent statement of intent.
+#   review_required     true | false
+#       Whether any diagnostic needs a reviewer (or the SLM) to confirm it.
+#   local_policy        pass | fail
+#       Project choices that are not RuleSpeak's, such as the vocabulary check.
+#
+# Evidence chain. Every template and diagnostic carries:
+#   basis    sourced: an RS check states this behavior directly
+#            inferred: the checker's surface reading of an RS check
+#            local: a project or parser choice with no RuleSpeak authority
+#   rs_refs  RS ids. Their original source locators are in rs_register below
+#            and are copied into every finding the checker returns.
+#
+# Status: draft v0.2.0, revised after review of v0.1.0. Versioned config.
+version: 0.2.0
 language: en
 
-# Words that may open a statement and introduce its subject.
+# Source keys: SF = RuleSpeak Sentence Forms v2.2, DD = Basic RuleSpeak
+# Guidelines v2.2, TL = Tabulation of Lists in RuleSpeak (2013), BM = The
+# Business Rules Manifesto. Page numbers are as printed in the documents.
+# The register lists all 29 ids so any citation can be checked against it.
+rs_register:
+  RS-01: {kind: form, source: ["SF p. 4"]}
+  RS-02: {kind: form, source: ["SF p. 4"]}
+  RS-03: {kind: meaning, source: ["SF p. 3", "DD §§1.3, 2.2"]}
+  RS-04: {kind: form, source: ["SF Table 2 forms 1.1.1–1.1.3, p. 9"]}
+  RS-05: {kind: form, source: ["SF Table 2 form 1.2, p. 9", "DD §7.1"]}
+  RS-06: {kind: form, source: ["SF Table 2 form 1.3, p. 9"]}
+  RS-07: {kind: form, source: ["SF Table 2 form 1.4, p. 9"]}
+  RS-08: {kind: form, source: ["SF Table 2 forms 2.1–2.3, pp. 9–10"]}
+  RS-09: {kind: form, source: ["SF pp. 7–8", "SF Table 2 forms 3.1–3.2, p. 10"]}
+  RS-10: {kind: form, source: ["SF pp. 7–8", "SF Table 2 forms 4.1–4.2, p. 10"]}
+  RS-11: {kind: form, source: ["SF p. 8", "SF Table 2 forms 5.1–5.3, p. 10"]}
+  RS-12: {kind: meaning, source: ["SF p. 7", "SF Table 2 forms 1.1.2 and 1.3, p. 9", "BM §§3.3, 5.3"]}
+  RS-13: {kind: meaning, source: ["SF pp. 7–8", "SF Table 2 form 3.1, p. 10", "BM §§3.3, 5.3"]}
+  RS-14: {kind: meaning, source: ["SF p. 8"]}
+  RS-15: {kind: meaning, source: ["SF p. 7", "SF Table 2 forms 1.1.3, 1.4, p. 9", "DD §§8.1–8.2"]}
+  RS-16: {kind: application, source: ["SF Table 2 forms 3.1–3.2, p. 10", "SF p. 7", "DD §3.3"]}
+  RS-17: {kind: principle, source: ["DD §§3.3, 5.1–5.2, 8.2", "BM §§3.1–3.3, 5.1–5.3"]}
+  RS-18: {kind: principle, source: ["BM §§4.7, 5.2", "SF p. 8"]}
+  RS-19: {kind: form, source: ["SF p. 6", "DD §§1.1, 4.6–4.7", "TL §1, pp. 4–5"]}
+  RS-20: {kind: style, source: ["DD §§4.1–4.3", "TL §2, p. 8"]}
+  RS-21: {kind: style, source: ["DD §§4.4–4.5"]}
+  RS-22: {kind: principle, source: ["DD §§3.1–3.3", "BM §§3.1–3.3"]}
+  RS-23: {kind: style, source: ["DD §§2.3, 5.1, 5.3"]}
+  RS-24: {kind: principle, source: ["DD §§1.1–1.3, 7.3, 8.1–8.2", "BM §§2.1–2.3, 4.1–4.6"]}
+  RS-25: {kind: style, source: ["DD §§6.2, 7.1–7.2"]}
+  RS-26: {kind: form, source: ["TL §3, pp. 11–12"]}
+  RS-27: {kind: meaning, source: ["TL §2, pp. 6–7", "TL §3, pp. 15–16", "DD §5.2"]}
+  RS-28: {kind: style, source: ["DD §6.1", "TL §3, pp. 12, 14–15"]}
+  RS-29: {kind: style, source: ["TL §3, p. 12"]}
+
+# Words that may open a statement and introduce its subject. A parser choice
+# (basis local). RS-19 asks for an explicit subject and RS-20 prefers a
+# singular one where guidance applies individually. The matched determiner is
+# kept unchanged in the "det" slot, so the quantifier is preserved.
 determiners: [A, An, Each, Every, The]
 
-# Rule keywords. A statement carries exactly one.
-rule_keywords: [must, may]
+# The operative rule keywords (RS-01). "must not" uses must; "may … only" uses only.
+rule_keywords: [must, only]
+# The advice keywords (RS-02).
+advice_keywords: [may, need not]
 
 # Templates are tried in order; the first match wins. Patterns are matched
-# case-insensitively against the whitespace-normalized statement, and {det}
-# expands to the determiners above. Named groups are returned as slots.
+# case-insensitively against the whitespace-normalized statement. {det}
+# expands to the determiners above. Named groups use Python (?P<name>...)
+# syntax; the JavaScript core converts it. Groups are returned as slots.
 templates:
   - id: RS-T06
     name: Computation
-    kind: definitional
-    form: "<term> must be computed as <expression>."
-    pattern: '^(?:(?P<det>{det}) )?(?P<subject>.+?) (?:must be|is always) computed as (?P<expression>.+)\.$'
-    example: "The order total must be computed as the sum of the line item amounts."
+    guidance: rule
+    form: "<result> must be computed as <formula>."
+    pattern: '^(?:(?P<det>{det}) )?(?P<subject>.+?) must be computed as (?P<expression>.+)\.$'
+    example: "The net amount of an invoice must be computed as the gross amount of the invoice minus the discount applied to the invoice."
+    basis: sourced
+    rs_refs: [RS-05]
 
   - id: RS-T05
-    name: Classification
-    kind: definitional
-    form: "<term> is always|never considered <classification> if|unless <condition>."
-    pattern: '^(?P<det>{det}) (?P<subject>.+?) is (?P<polarity>always|never) considered (?P<classification>.+?) (?P<cond_kw>if|unless) (?P<condition>.+)\.$'
-    example: "A customer is always considered preferred if the customer has placed more than 10 orders."
+    name: Classification (sufficient condition)
+    guidance: rule
+    form: "<term> must be considered <classification> if <condition>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) must be considered (?P<classification>.+?) if (?P<condition>.+)\.$'
+    example: "A customer must be considered preferred if the customer has placed more than 10 orders."
+    basis: sourced
+    rs_refs: [RS-06, RS-12]
 
   - id: RS-T05b
-    name: Restricted classification
-    kind: definitional
+    name: Classification (necessary condition), profile extension
+    guidance: rule
     form: "<term> is considered <classification> only if <condition>."
-    pattern: '^(?P<det>{det}) (?P<subject>.+?) is considered (?P<classification>.+?) only if (?P<condition>.+)\.$'
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) (?:is|must be) considered (?P<classification>.+?) only if (?P<condition>.+)\.$'
     example: "A shipment is considered late only if it is delivered after its promised date."
+    basis: local
+    rs_refs: []
+    note: >-
+      Not a published form. It states a necessary condition, the reverse of
+      RS-06's sufficient condition, so rewriting "only if" as "if" reverses
+      the implication. Accepted so it can be recognized, and always sent to
+      review (RS-EXT-002) until an expert settles its status.
+
+  - id: RS-T09
+    name: Procedure at an occurrence
+    guidance: rule
+    form: "<procedure> must be performed [<qualification>] when <occurrence>."
+    pattern: '^(?:(?P<det>{det}) )?(?P<subject>.+?) must be performed(?: (?P<qualification>.+?))? when (?P<condition>.+)\.$'
+    example: "A credit check must be performed when a new customer places an order."
+    basis: sourced
+    rs_refs: [RS-07, RS-15]
 
   - id: RS-T02
     name: Prohibition
-    kind: behavioral
-    form: "<subject> must not <predicate> [if|unless <condition>]."
-    pattern: '^(?P<det>{det}) (?P<subject>.+?) must not (?P<predicate>.+?)(?: (?P<cond_kw>if|unless) (?P<condition>.+))?\.$'
+    guidance: rule
+    form: "<subject> must not <predicate> [if|when <condition>]."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) must not (?P<predicate>.+?)(?: (?P<cond_kw>if|when|unless) (?P<condition>.+))?\.$'
     example: "An order must not be shipped if the outstanding balance exceeds the credit limit."
+    basis: sourced
+    rs_refs: [RS-01, RS-08]
 
   - id: RS-T03
     name: Restricted permission
-    kind: behavioral
-    form: "<subject> may <predicate> only <restriction>."
-    pattern: '^(?P<det>{det}) (?P<subject>.+?) may (?:only (?P<predicate_a>.+?)|(?P<predicate_b>.+?) only (?P<restriction>.+))\.$'
-    example: "A refund may be issued only if the purchase was made within the last 30 days."
+    guidance: rule
+    form: "<subject> may <predicate> only if <condition> | only <qualification>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) may (?P<predicate>.+?) only (?P<restriction>(?P<restriction_kw>[a-z]+)\b.*)\.$'
+    example: "A supplier may submit an invoice only after the buyer issues the purchase order for the invoice."
+    basis: sourced
+    rs_refs: [RS-01, RS-09, RS-13]
+
+  - id: RS-T03b
+    name: Restricted permission, "only" before the verb
+    guidance: rule
+    form: "<subject> may only <predicate>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) may only (?P<predicate>.+)\.$'
+    example: "A loan may only be approved by a credit officer."
+    basis: inferred
+    rs_refs: [RS-01, RS-09]
+    note: A word-order variant of "may … only …". The published forms place "only" after the verb phrase.
 
   - id: RS-T04
     name: Restricted eligibility
-    kind: behavioral
+    guidance: rule
     form: "Only <qualified subject> may <predicate>."
     pattern: '^Only (?P<subject>.+?) may (?P<predicate>.+)\.$'
     example: "Only a manager may approve a discount above 20 percent."
+    basis: inferred
+    rs_refs: [RS-01, RS-09]
+    note: Uses the rule keyword "only" (RS-01) to restrict who may act. Not one of the Table 2 forms listed in the ruleset.
 
   - id: RS-T01
     name: Obligation
-    kind: behavioral
-    form: "<subject> must <predicate> [if|unless <condition>]."
-    pattern: '^(?P<det>{det}) (?P<subject>.+?) must (?!not\b)(?P<predicate>.+?)(?: (?P<cond_kw>if|unless) (?P<condition>.+))?\.$'
-    example: "Each order must have at least one line item."
+    guidance: rule
+    form: "<subject> must <predicate> [if|when <condition>]."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) must (?!not\b)(?P<predicate>.+?)(?: (?P<cond_kw>if|when|unless) (?P<condition>.+))?\.$'
+    example: "A delivery must have a signed receipt if the value of the delivery exceeds USD 10,000."
+    basis: sourced
+    rs_refs: [RS-01, RS-04, RS-12, RS-15]
 
-# Defect taxonomy. These codes are also the labels for the RuleSpeak
-# validation golden set (Phase 0.2). Severity "error" makes a statement
-# non-conformant; "warning" is reported but does not fail the check.
-defects:
-  RS-STR-001:
-    severity: error
-    title: Not a single sentence
-    description: A rule statement is exactly one sentence ending in a full stop.
-    example_bad: "A customer must have an account. The account must be active."
-  RS-STR-002:
-    severity: error
-    title: More than one rule
-    description: The statement carries more than one rule keyword, so it bundles several rules. Split it.
-    example_bad: "An order must have a customer and must have at least one line item."
-  RS-STR-003:
-    severity: error
-    title: Leading condition
-    description: The statement opens with a condition. RuleSpeak puts the subject and rule keyword first and the condition after.
-    example_bad: "If the balance is overdue, an order must not be shipped."
+  - id: RS-T08
+    name: Advice, exemption or optionality
+    guidance: advice
+    form: "<subject> need not <predicate> [<qualification>]."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) need not (?P<predicate>.+)\.$'
+    example: "A nonprofit applicant need not pay the deposit."
+    basis: sourced
+    rs_refs: [RS-02, RS-11]
+
+  - id: RS-T07
+    name: Advice, permission
+    guidance: advice
+    form: "<subject> may <predicate>."
+    pattern: '^(?P<det>{det}) (?P<subject>.+?) may (?P<predicate>.+?)(?: (?P<cond_kw>if|when) (?P<condition>.+))?\.$'
+    example: "A visitor accompanied by a curator may enter the archive."
+    basis: sourced
+    rs_refs: [RS-02, RS-10]
+
+# Diagnostics. kind follows the ruleset (form, meaning, style, principle,
+# application) plus profile and local for checker and project limits. It
+# decides which outcome a diagnostic feeds. disposition:
+#   error    decides its outcome (needs_revision, rejected or fail)
+#   review   a surface pattern a reviewer must confirm
+#   warning  reported only
+#   info     a note, such as a profile extension or an application being used
+diagnostics:
   RS-KW-001:
-    severity: error
-    title: Missing rule keyword
-    description: The statement has no "must" or "may ... only", so it states a fact or a wish, not a rule.
-    example_bad: "Orders are shipped within two days."
+    title: No rule or advice keyword detected
+    kind: form
+    disposition: error
+    description: The statement has neither rule keyword ("must", "only") nor advice keyword ("may", "need not").
+    basis: sourced
+    rs_refs: [RS-01, RS-02]
+    example: "Orders are shipped within two days."
   RS-KW-002:
-    severity: error
-    title: Non-RuleSpeak modal
-    description: Uses a modal RuleSpeak avoids (should, shall, can, could, will, would, might, ought to, need to, has to, have to). Use "must" or "may ... only".
-    example_bad: "A customer should provide a delivery address."
+    title: Modal needing interpretation detected
+    kind: meaning
+    disposition: review
+    description: >-
+      Uses should, shall, can, could, will, would, might, ought to, need to,
+      has to or have to. Resolve whether it expresses obligation, permission
+      or ability, and how strongly it is enforced, before rewriting.
+    basis: sourced
+    rs_refs: [RS-03]
+    example: "A customer should provide a delivery address."
   RS-KW-003:
-    severity: error
-    title: Unrestricted permission
-    description: '"may" without "only" grants a permission and restricts nothing, so it is not a rule.'
-    example_bad: "A customer may cancel an order."
-  RS-TPL-001:
-    severity: error
-    title: No approved template
-    description: The statement uses a rule keyword but does not match any approved sentence template. Check that it opens with a determiner (A, An, Each, Every, The) or "Only".
-    example_bad: "Customers must register."
+    title: More than one rule keyword detected
+    kind: form
+    disposition: review
+    description: >-
+      "must" or "only" occurs more than once. RS-01 asks for one operative
+      keyword, but a surface match cannot tell an operative use from, say, a
+      quantifier ("only one"), or whether the sentence holds more than one rule.
+    basis: inferred
+    rs_refs: [RS-01]
+    example: "An order must have a customer and must have at least one line item."
+  RS-KW-004:
+    title: '"must … only" detected'
+    kind: form
+    disposition: review
+    description: >-
+      Can carry both an obligation and a restriction on who or when. Ask which
+      the business intends. If both apply, express each explicitly.
+    basis: inferred
+    rs_refs: [RS-01, RS-04, RS-09]
+    example: "A loan must be approved only by a credit officer."
+  RS-ADV-001:
+    title: '"may … if" detected'
+    kind: form
+    disposition: error
+    description: >-
+      Readers may take a conditional permission as a restriction. Revise to
+      "may … only if" if the condition is required, or scope the subject or
+      phrase if it is a permission for that case.
+    basis: sourced
+    rs_refs: [RS-10]
+    example: "A visitor may enter the archive if accompanied by a curator."
+  RS-APP-001:
+    title: Temporal application of form 3.2
+    kind: application
+    disposition: info
+    description: >-
+      "may … only after" or "only before" applies the general "may … only …"
+      phrase pattern to a time relation. Check that the event concerns the same
+      subject instance and is complete when the action is proposed.
+    basis: sourced
+    rs_refs: [RS-16]
+    example: "A supplier may submit an invoice only after the buyer issues the purchase order for the invoice."
   RS-STY-001:
-    severity: error
-    title: System-centric wording
-    description: Describes what a system or screen does. A business rule constrains the business, not the software.
-    example_bad: "The system must reject an order without a customer."
+    title: Leading qualification
+    kind: style
+    disposition: warning
+    description: Opens with a condition or timeframe. RuleSpeak prefers the subject first and qualifications after the main clause.
+    basis: sourced
+    rs_refs: [RS-20]
+    example: "If the balance is overdue, an order must not be shipped."
   RS-STY-002:
-    severity: error
-    title: Procedural wording
-    description: Uses sequence or event words (then, after that, upon, afterwards, subsequently, followed by) that describe a process, not a constraint.
-    example_bad: "An order must be checked and then shipped."
+    title: System term detected
+    kind: principle
+    disposition: review
+    description: Mentions a system, screen or database. Examine the wording for the underlying business condition.
+    basis: inferred
+    rs_refs: [RS-24]
+    example: "The system must reject an order without a customer."
   RS-STY-003:
-    severity: warning
-    title: Redundant adverb after "must"
-    description: '"must always" and "must never" add nothing; use "must" or "must not".'
-    example_bad: "An invoice must always have a due date."
+    title: Sequence term detected
+    kind: principle
+    disposition: review
+    description: Uses then, after that, upon, afterwards, subsequently or followed by. This can signal process wording; it does not establish it.
+    basis: inferred
+    rs_refs: [RS-24]
+    example: "An order must be checked and then shipped."
   RS-STY-004:
-    severity: warning
-    title: Long statement
-    description: Over 40 words. Long statements usually hide several rules.
+    title: Redundant emphasis detected
+    kind: style
+    disposition: warning
+    description: '"must always" or "must never". The adverb adds nothing; use "must" or "must not".'
+    basis: inferred
+    rs_refs: [RS-23]
+    example: "An invoice must always have a due date."
   RS-VAG-001:
-    severity: error
-    title: Vague term
-    description: Uses a term with no testable meaning (for example appropriate, reasonable, some, several, as soon as possible, if possible, etc.).
-    example_bad: "A complaint must be answered as soon as possible."
+    title: Vague term detected
+    kind: style
+    disposition: review
+    description: Uses a term such as appropriate, reasonable, as soon as possible or etc. Check whether it obscures what must be evaluated.
+    basis: inferred
+    rs_refs: [RS-23]
+    example: "A complaint must be answered as soon as possible."
   RS-VAG-002:
-    severity: error
-    title: Ambiguous conjunction
-    description: '"and/or" leaves it unclear whether both or either condition applies.'
-    example_bad: "A claim must be reviewed if it exceeds 1000 dollars and/or is flagged."
+    title: '"and/or" detected'
+    kind: meaning
+    disposition: review
+    description: Check which conditions are grouped and whether the alternatives can be true together.
+    basis: inferred
+    rs_refs: [RS-27]
+    example: "A claim must be reviewed if it exceeds 1000 dollars and/or is flagged."
+  RS-EXT-001:
+    title: '"unless" condition, profile extension'
+    kind: profile
+    disposition: info
+    description: >-
+      The profile accepts "unless" as a condition keyword and reads it as "if
+      not". RS-15 covers "if" and "when"; no direct source support for
+      "unless" is established.
+    basis: local
+    rs_refs: []
+    example: "An invoice must be paid within 30 days unless the customer has extended terms."
+  RS-EXT-002:
+    title: Necessary-condition classification, profile extension
+    kind: meaning
+    disposition: review
+    description: '"is considered … only if" states a necessary condition, not the published sufficient-condition form. Confirm the intended direction.'
+    basis: inferred
+    rs_refs: [RS-06, RS-12, RS-13]
+    example: "A shipment is considered late only if it is delivered after its promised date."
+  RS-PRF-001:
+    title: Form not supported by this profile
+    kind: profile
+    disposition: error
+    description: No supported template matched. The statement may still be RuleSpeak outside the supported subset.
+    basis: local
+    rs_refs: []
+    example: "Customers must register."
+  RS-PRF-002:
+    title: Parser requires the subject first
+    kind: profile
+    disposition: error
+    description: The template parser cannot read a statement that opens with a qualification. Reported separately from the style warning RS-STY-001.
+    basis: local
+    rs_refs: []
+    example: "If the balance is overdue, an order must not be shipped."
+  RS-PRF-003:
+    title: Not one sentence ending in a full stop
+    kind: profile
+    disposition: error
+    description: The checker reads one statement at a time.
+    basis: local
+    rs_refs: []
+    example: "A customer must have an account. The account must be active."
+  RS-LOC-001:
+    title: Over the local word limit
+    kind: local
+    disposition: warning
+    description: Over max_words words. A project threshold, not a RuleSpeak check.
+    basis: local
+    rs_refs: []
   RS-VOC-001:
-    severity: error
-    title: Subject not in vocabulary
-    description: When a vocabulary (fact model terms) is supplied, the subject must use one of its terms.
+    title: No supplied vocabulary term found in the subject
+    kind: local
+    disposition: error
+    description: >-
+      A vocabulary was supplied and no term from it occurs in the subject. A
+      hit only means a term string occurs there. It does not establish that
+      the subject is an agreed business term (RS-22), which needs review.
+    basis: local
+    rs_refs: [RS-22]
+    example: "(vocabulary: order, customer) Each shipment must have a carrier."
 
 lexicon:
-  non_rulespeak_modals: [should, shall, can, could, will, would, might, "ought to", "need to", "needs to", "has to", "have to"]
+  modals_needing_interpretation: [should, shall, can, could, will, would, might, "ought to", "need to", "needs to", "has to", "have to"]
   system_terms: ["the system", "the application", "the software", "the screen", "the user interface", "the ui", "the database", "the app"]
-  procedural_terms: [then, "after that", upon, afterwards, subsequently, "followed by"]
+  sequence_terms: [then, "after that", upon, afterwards, subsequently, "followed by"]
   vague_terms: [appropriate, appropriately, reasonable, reasonably, some, several, many, few, various, adequate, sufficient, timely, "as soon as possible", asap, "if possible", "where applicable", "as needed", "when necessary", "as appropriate", etc, "and so on", normally, usually, generally]
-  leading_condition_words: [if, when, whenever, unless, in case, provided]
+  leading_qualification_words: [if, when, whenever, unless, "in case", provided, before, after, within, during, upon]
   redundant_adverbs: [always, never]
+  temporal_restriction_words: [after, before, once, until, while, during]
 
 max_words: 40

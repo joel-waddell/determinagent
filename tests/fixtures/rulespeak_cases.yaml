@@ -1,43 +1,750 @@
-# Checker test cases. Each case gives a statement and either the template it
-# must match (conformant) or the defect codes it must raise (exactly).
-conformant:
-  - {text: "Each order must have at least one line item.", template: RS-T01}
-  - {text: "A customer must have a billing address if the customer has placed an order.", template: RS-T01}
-  - {text: "An invoice must be paid within 30 days unless the customer has extended terms.", template: RS-T01}
-  - {text: "An order must not be shipped if the outstanding balance exceeds the credit limit.", template: RS-T02}
-  - {text: "A user account must not be shared.", template: RS-T02}
-  - {text: "A refund may be issued only if the purchase was made within the last 30 days.", template: RS-T03}
-  - {text: "A loan may only be approved by a credit officer.", template: RS-T03}
-  - {text: "Only a manager may approve a discount above 20 percent.", template: RS-T04}
-  - {text: "A customer is always considered preferred if the customer has placed more than 10 orders.", template: RS-T05}
-  - {text: "A claim is never considered complete unless it has a signed declaration.", template: RS-T05}
-  - {text: "A shipment is considered late only if it is delivered after its promised date.", template: RS-T05b}
-  - {text: "The order total must be computed as the sum of the line item amounts.", template: RS-T06}
-  - {text: "An order total is always computed as the sum of the line item amounts.", template: RS-T06}
-  - {text: "A premium must be at least 2.5 percent of the insured value.", template: RS-T01}
-  - {text: "An  order   must have a customer.", template: RS-T01}
-
-# Conformant, but must carry exactly these warning codes.
-warnings:
-  - {text: "An invoice must always have a due date.", template: RS-T01, codes: [RS-STY-003]}
-
-defective:
-  - {text: "A customer must have an account. The account must be active.", codes: [RS-STR-001, RS-STR-002]}
-  - {text: "A customer must have an account", codes: [RS-STR-001]}
-  - {text: "An order must have a customer and must have at least one line item.", codes: [RS-STR-002]}
-  - {text: "If the balance is overdue, an order must not be shipped.", codes: [RS-STR-003]}
-  - {text: "When a claim is filed, an adjuster must be assigned.", codes: [RS-STR-003]}
-  - {text: "Orders are shipped within two days.", codes: [RS-KW-001]}
-  - {text: "A customer should provide a delivery address.", codes: [RS-KW-002]}
-  - {text: "A customer has to provide a delivery address.", codes: [RS-KW-002]}
-  - {text: "A customer may cancel an order.", codes: [RS-KW-003]}
-  - {text: "Customers must register.", codes: [RS-TPL-001]}
-  - {text: "A customer is considered preferred.", codes: [RS-TPL-001]}
-  - {text: "The order total is computed as the sum.", codes: [RS-TPL-001]}
-  - {text: "The system must reject an order without a customer.", codes: [RS-STY-001]}
-  - {text: "The system shall reject an order without a customer.", codes: [RS-KW-002, RS-STY-001]}
-  - {text: "An order must be checked and then shipped.", codes: [RS-STY-002]}
-  - {text: "A complaint must be answered as soon as possible.", codes: [RS-VAG-001]}
-  - {text: "A claim must be reviewed if it is appropriate.", codes: [RS-VAG-001]}
-  - {text: "A claim must be reviewed if it exceeds 1000 dollars and/or is flagged.", codes: [RS-VAG-002]}
-  - {text: "", codes: [RS-KW-001]}
+# RuleSpeak cases shared by the Python and JavaScript cores, and the seed of
+# the 0.2 golden set. Each case keeps two expectations apart:
+#
+#   checker    what the deterministic checker must return. Asserted by the
+#              tests in both cores (only the keys present are compared; codes
+#              must match exactly, in any order).
+#   rulespeak  the RuleSpeak assessment a domain expert would give: form
+#              (conforms | needs_revision | undetermined), fidelity, and the
+#              RS ids that justify it. Not asserted by the checker tests; it
+#              labels the agent and SLM evaluations, and shows where the
+#              checker and RuleSpeak disagree. label_status stays "draft"
+#              until the domain expert labels the case.
+#   reason     why, in one line. origin names a traced example it came from.
+cases:
+- id: RS-C001
+  text: Each order must have at least one line item.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-04
+    label_status: draft
+  reason: Unconditional obligation with one rule keyword.
+- id: RS-C002
+  text: A delivery must have a signed receipt if the value of the delivery exceeds USD 10,000.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-04
+    - RS-12
+    - RS-17
+    label_status: draft
+  reason: Conditional obligation. 'Exceeds' keeps exactly USD 10,000 outside the rule.
+  origin: RuleSpeak-Agent.md E2
+- id: RS-C003
+  text: An invoice must be paid within 30 days unless the customer has extended terms.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-EXT-001
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-04
+    - RS-18
+    label_status: draft
+  reason: '''unless'' is a profile extension with no direct source support; the exception''s interaction with the rule needs
+    review.'
+- id: RS-C004
+  text: An order must not be shipped if the outstanding balance exceeds the credit limit.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T02
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-08
+    label_status: draft
+  reason: Conditional prohibition.
+- id: RS-C005
+  text: A user account must not be shared.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T02
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-08
+    label_status: draft
+  reason: Unconditional prohibition.
+- id: RS-C006
+  text: A supplier may submit an invoice only after the buyer issues the purchase order for the invoice.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T03
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-APP-001
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-09
+    - RS-13
+    - RS-16
+    label_status: draft
+  reason: Restricted permission; 'only after' is a temporal application of form 3.2 (RS-APP-001).
+  origin: RuleSpeak-Agent.md E1
+- id: RS-C007
+  text: A supplier may submit an invoice only if the buyer has already issued the purchase order for the invoice.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T03
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-09
+    - RS-13
+    - RS-16
+    label_status: draft
+  reason: Published form 3.1 alternative to E1 with an explicit prior-event condition.
+  origin: RuleSpeak-Agent.md E1 alternative
+- id: RS-C008
+  text: A loan may only be approved by a credit officer.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T03b
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-09
+    label_status: draft
+  reason: Restricted permission with 'only' before the verb; a word-order variant of form 3.2.
+- id: RS-C009
+  text: Only a manager may approve a discount above 20 percent.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T04
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-09
+    label_status: draft
+  reason: '''only'' restricts who may act.'
+- id: RS-C010
+  text: A customer must be considered preferred if the customer has placed more than 10 orders.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T05
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-06
+    - RS-12
+    label_status: draft
+  reason: Published sufficient-condition classification, form 1.3.
+- id: RS-C011
+  text: A shipment is considered late only if it is delivered after its promised date.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T05b
+    form: conforms
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-EXT-002
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-06
+    - RS-12
+    - RS-13
+    label_status: draft
+  reason: Necessary-condition classification is not a published form; direction needs confirming.
+- id: RS-C012
+  text: The net amount of an invoice must be computed as the gross amount of the invoice minus the discount applied to the
+    invoice.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T06
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-05
+    - RS-22
+    label_status: draft
+  reason: Computation with the result as subject; both operands refer to the same invoice.
+  origin: RuleSpeak-Agent.md E6
+- id: RS-C013
+  text: A credit check must be performed when a new customer places an order.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T09
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-07
+    - RS-15
+    label_status: draft
+  reason: Procedure required at an identified occurrence, form 1.4.
+- id: RS-C014
+  text: A premium must be at least 2.5 percent of the insured value.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-04
+    - RS-21
+    label_status: draft
+  reason: Numeric threshold; the decimal point is not a sentence break.
+- id: RS-C015
+  text: Every employee must complete safety training.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-04
+    - RS-19
+    - RS-20
+    label_status: draft
+  reason: '''Every'' is accepted and kept in the det slot.'
+- id: RS-C016
+  text: A nonprofit applicant need not pay the deposit.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T08
+    form: conforms
+    guidance_type: advice
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-02
+    - RS-11
+    - RS-14
+    label_status: draft
+  reason: 'Advice: exemption for a named class, form 5.3.'
+  origin: RuleSpeak-Agent.md E5
+- id: RS-C017
+  text: A visitor accompanied by a curator may enter the archive.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T07
+    form: conforms
+    guidance_type: advice
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-10
+    - RS-14
+    label_status: draft
+  reason: 'Advice: permission scoped by qualifying the subject, form 4.2.'
+  origin: RuleSpeak-Agent.md E3 rewrite
+- id: RS-C018
+  text: A visitor may enter the archive if accompanied by a curator.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T07
+    form: needs_revision
+    guidance_type: advice
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-ADV-001
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-10
+    - RS-14
+    label_status: draft
+  reason: '''may … if'' can be misread as a restriction.'
+  origin: RuleSpeak-Agent.md E3
+- id: RS-C019
+  text: A visitor may enter the archive only if the visitor is accompanied by a curator.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T03
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-09
+    - RS-13
+    label_status: draft
+  reason: Restricted permission, form 3.1. As a rewrite of E3 it changes the literal scope.
+  origin: RuleSpeak-Agent.md E3 rewrite
+- id: RS-C020
+  text: A temporary badge must expire at midnight when the badge is issued.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes: []
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-15
+    - RS-17
+    label_status: draft
+  reason: The time relation between issuance and expiry is unclear. The checker accepts the form; this case records that gap.
+  origin: RuleSpeak-Agent.md E4
+- id: RS-C021
+  text: An invoice must always have a due date.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-STY-004
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-23
+    label_status: draft
+  reason: Redundant emphasis is a style warning, not a form defect.
+- id: RS-C022
+  text: A customer is always considered preferred if the customer has placed more than 10 orders.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: needs_revision
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-KW-001
+    - RS-PRF-001
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-06
+    label_status: draft
+  reason: No rule keyword; the published form is 'must be considered … if'.
+- id: RS-C023
+  text: A customer is considered preferred.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: needs_revision
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-KW-001
+    - RS-PRF-001
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-06
+    label_status: draft
+  reason: No rule keyword and no condition. Regression case for the v0.1 reviewer finding.
+- id: RS-C024
+  text: A customer must have an account. The account must be active.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: undetermined
+    guidance_type: null
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-PRF-003
+    - RS-KW-003
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-19
+    label_status: draft
+  reason: Two sentences; each may be a valid rule, but the checker reads one statement at a time.
+- id: RS-C025
+  text: A customer must have an account
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: undetermined
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-PRF-003
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-19
+    label_status: draft
+  reason: Missing full stop. The checker rejects it; whether that matters for RuleSpeak is a presentation question.
+- id: RS-C026
+  text: An order must have a customer and must have at least one line item.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: undetermined
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-KW-003
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    label_status: draft
+  reason: Two operative 'must' keywords; likely two rules.
+- id: RS-C027
+  text: Each order must have only one customer.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: undetermined
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-KW-004
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-04
+    label_status: draft
+  reason: '''only'' here is a quantifier, not an operative keyword. The checker can only flag it for review.'
+- id: RS-C028
+  text: A loan must be approved only by a credit officer.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: undetermined
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-KW-004
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-04
+    - RS-09
+    label_status: draft
+  reason: Obligation and restriction combined. Ask which the business intends.
+- id: RS-C029
+  text: If the balance is overdue, an order must not be shipped.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: undetermined
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-STY-001
+    - RS-PRF-002
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-08
+    - RS-20
+    label_status: draft
+  reason: 'Valid prohibition with a leading condition: a style warning in RuleSpeak, and a parser limit here.'
+- id: RS-C030
+  text: Orders are shipped within two days.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: needs_revision
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-KW-001
+    - RS-PRF-001
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-24
+    label_status: draft
+  reason: A statement of fact, with no rule keyword.
+- id: RS-C031
+  text: A customer should provide a delivery address.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: needs_revision
+    guidance_type: null
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-KW-001
+    - RS-KW-002
+    - RS-PRF-001
+  rulespeak:
+    form: needs_revision
+    fidelity: unverified
+    rs_refs:
+    - RS-01
+    - RS-03
+    label_status: draft
+  reason: No rule keyword; resolve the strength of 'should' before rewriting.
+- id: RS-C032
+  text: A customer can cancel an order only if it has not shipped.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: undetermined
+    guidance_type: null
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-KW-002
+    - RS-PRF-001
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-03
+    - RS-09
+    label_status: draft
+  reason: '''can'' may mean ability or permission; if permission, form 3.1 with ''may''.'
+- id: RS-C033
+  text: Customers must register.
+  checker:
+    profile_acceptance: rejected
+    template: null
+    form: undetermined
+    guidance_type: null
+    review_required: false
+    local_policy: pass
+    codes:
+    - RS-PRF-001
+  rulespeak:
+    form: conforms
+    fidelity: unverified
+    rs_refs:
+    - RS-04
+    - RS-20
+    label_status: draft
+  reason: A plural group subject is allowed when the collective is meant. Outside the parser's subject-determiner subset.
+- id: RS-C034
+  text: The system must reject an order without a customer.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-STY-002
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-24
+    label_status: draft
+  reason: System wording; the underlying business rule is probably 'An order must have a customer.'
+- id: RS-C035
+  text: An order must be checked and then shipped.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-STY-003
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-24
+    - RS-01
+    label_status: draft
+  reason: Process wording; may hide two rules or a procedure.
+- id: RS-C036
+  text: A complaint must be answered as soon as possible.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-VAG-001
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-23
+    - RS-17
+    label_status: draft
+  reason: '''as soon as possible'' does not say what must be evaluated.'
+- id: RS-C037
+  text: A claim must be reviewed if it exceeds 1000 dollars and/or is flagged.
+  checker:
+    profile_acceptance: accepted
+    template: RS-T01
+    form: conforms
+    guidance_type: rule
+    review_required: true
+    local_policy: pass
+    codes:
+    - RS-VAG-002
+  rulespeak:
+    form: undetermined
+    fidelity: unverified
+    rs_refs:
+    - RS-27
+    label_status: draft
+  reason: '''and/or'' leaves the grouping of conditions unclear.'
+vocabulary_cases:
+- id: RS-V001
+  text: Each order must have at least one line item.
+  vocabulary:
+  - order
+  - customer
+  - line item
+  checker:
+    profile_acceptance: accepted
+    local_policy: pass
+    term_hits:
+    - order
+    codes: []
+  reason: The subject contains a supplied term. A hit is not proof the term is agreed (RS-22).
+- id: RS-V002
+  text: Each shipment must have a carrier.
+  vocabulary:
+  - order
+  - customer
+  - line item
+  checker:
+    profile_acceptance: accepted
+    form: conforms
+    local_policy: fail
+    term_hits: []
+    codes:
+    - RS-VOC-001
+  reason: Local vocabulary failure, reported apart from the RuleSpeak form verdict.

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // determinagent check {rulespeak|gherkin} [FILE] [--vocabulary a,b,c]
 //
-// Reads FILE (or stdin), prints the verdict as JSON, and exits 0 when the
-// input is conformant, 1 when it is not, 2 on a usage error. RuleSpeak input
-// is one statement per line. Output matches the Python CLI.
+// Reads FILE (or stdin), prints the result as JSON, and exits 0 when every
+// input passes, 1 when one does not, 2 on a usage error. A Gherkin document
+// passes when it is conformant. A RuleSpeak statement passes when the profile
+// accepts it, its form conforms and local policy passes; review findings are
+// reported but do not fail it. RuleSpeak input is one statement per line.
+// Output matches the Python CLI.
 import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
@@ -40,7 +43,7 @@ export function main(argv = process.argv.slice(2), { stdin = () => readFileSync(
     output = lines.map((l, i) => ({ input: l, ...results[i].toDict() }))
   }
   out.write(`${JSON.stringify(output.length === 1 ? output[0] : output, null, 2)}\n`)
-  return results.every((r) => r.conformant) ? 0 : 1
+  return results.every((r) => (profile === 'gherkin' ? r.conformant : r.passed)) ? 0 : 1
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -9,12 +9,12 @@ This is workstream 0.1 of the [program of work](../program-of-work.md). It defin
 
 | Check | Who does it |
 | --- | --- |
-| Statement is one sentence, has one rule keyword, matches an approved template | Checker |
-| Avoided modals, system or procedural wording, vague terms, `and/or` | Checker |
-| Subject uses a term from the supplied vocabulary | Checker |
+| Statement is one sentence, has a rule or advice keyword, and matches a supported template | Checker |
+| Surface patterns that need review: modals, repeated keywords, system or sequence terms, vague terms, `and/or` | Checker flags, reviewer or SLM decides |
+| Subject contains a term from the supplied vocabulary (local policy) | Checker |
 | Gherkin parses with the official parser | Checker |
 | Scenario structure: names, Given/When/Then order, outlines and examples | Checker |
-| The rule or scenario says what the business intended | SLM, scored by rubric |
+| The rule or scenario says what the business intended (fidelity) | SLM, scored by rubric |
 | Terms are used consistently with their definitions | SLM |
 | A rule is atomic in meaning, not just in wording | SLM |
 | A scenario's steps are concrete and testable | SLM, scored by rubric |
@@ -27,14 +27,14 @@ Field lists below are the working definition for 0.2 (golden set) and 0.7 (contr
 
 - **Input:** business intent (one constraint, stated in plain terms), the domain vocabulary (fact model terms), and optional context such as the policy source.
 - **Output:** one or more rule statements, each conformant to the RuleSpeak profile and using only vocabulary terms as subjects.
-- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary)` in either core.
+- **Deterministic acceptance:** every statement passes `rulespeak.check(statement, vocabulary)` in either core, with `guidance_type: rule`. Review findings are sent to the rubric.
 - **Semantic acceptance:** the statements express the intent, no more and no less (rubric, Phase 0.2).
 
 ### T2 RuleSpeak validation
 
 - **Input:** one or more rule statements and the domain vocabulary.
-- **Output:** per statement, a verdict (conformant or not) and a list of defects, each with a code from the RuleSpeak defect taxonomy or a semantic defect code (to be defined in 0.2).
-- **Deterministic part:** the checker's defects are taken as given. The SLM adds semantic defects only.
+- **Output:** per statement, the RuleSpeak form verdict (conforms, needs revision, undetermined) and fidelity (preserved, changed, unverified), with each finding traced to RS ids, following the response contract in RuleSpeak-Agent.md.
+- **Deterministic part:** the checker's form errors are taken as given. The SLM resolves its review findings and adds meaning findings.
 - **Metric:** precision and recall of the reported defects against labelled cases.
 
 ### T3 Gherkin requirements
