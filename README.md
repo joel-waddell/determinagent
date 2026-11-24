@@ -12,7 +12,8 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.2 Golden evaluation set | Design set; pilot batch of 60 drafted, awaiting labels ([docs](docs/golden-set.md)) |
 | 0 Foundations | 0.3 Baselines and targets | Harness and gate built; model-free checker baseline measured ([docs](docs/evaluation.md)); model baselines need model access |
 | 0 Foundations | 0.4 SLM strategy | Shortlist, selection method, prompts v1, model adapters and eval runner built; runs need model access ([docs](docs/slm-strategy.md)) |
-| 0 Foundations | 0.5 to 0.6 | Not started |
+| 0 Foundations | 0.5 Fine-tuning readiness | Draft verdict per resource; final once the 0.4 screen is in ([docs](docs/finetune-readiness.md)) |
+| 0 Foundations | 0.6 Intake UX design sprint | Users mapped, three concepts, two clickable mock-ups; user testing needs Joel ([docs](docs/intake-ux.md)) |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate, including the JavaScript J1–J3 contracts; freezes after 0.6 ([docs](docs/contracts.md)) |
 | 0 Foundations | 0.1 Domain specification (JavaScript, tranche 1) | JS profile v0.1.0: ESLint rule set, defect taxonomy and checker ([docs](docs/domain/javascript.md)) |
 | 0 Foundations | 0.2 to 0.4 JavaScript J2 (tranche 1) | Pilot of 20 J2 cases with hidden tests, mutation-checked, awaiting labels; scorer, runner and prompt hooks built ([docs](docs/golden-set.md#j2-javascript-generation-amendment-1)) |

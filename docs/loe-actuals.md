@@ -12,6 +12,8 @@ The baseline estimates are in [program-of-work.md](program-of-work.md#level-of-e
 | 0.3 Baselines and targets | 6–10 | 1 | Harness, gate, oracle and checker baselines. Model baselines pending model access. |
 | 0.4 SLM strategy | 8–14 | 1 | Shortlist, selection method, prompts v1, adapters (Ollama/OpenAI-style, Claude) and the runner with checker-driven retries. Screening runs pending model access. |
 | 0.7 Contracts, JS (Amendment 1) | 3–4 (tranche 1 share) | 1 | J1–J3 inputs and outputs, sandbox report, handoff `js_module`, two reason codes; examples in both cores. |
+| 0.5 Fine-tuning readiness | 4–6 | 1 | Draft verdict for data, compute, skills and serving; 7–11 sessions to close the gaps if fine-tuning is needed. |
+| 0.6 Intake UX design sprint | 10–20 | 1 | Steps 1–3: user map, three concepts, typed-form and template-editor mock-ups, test plan and decision rule. Testing pending. |
 | 0.1 Domain specification, JS (Amendment 1) | 4–6 (tranche 1 share) | 1 (shared with 0.8) | JS profile v0.1.0 as YAML: ESLint rule set, defect taxonomy, export rule, checker and fixtures, in `js/` only. |
 | 0.8 Execution sandbox | 6–12 | 1 (shared with 0.1) | Child process with permission model, network namespace, heap limit; vm context with fixed clock, seeded random and host-global traps; escape suite; Python bridge. |
 | 0.2 Golden set, J2 (Amendment 1) | 7–12 (tranche 1 share) | 1 (shared with 0.3/0.4 J2) | J2 design, 20-case pilot with reference solutions and hidden tests, mutation verifier, workbook sheet. Labelling is expert time, not counted. |
