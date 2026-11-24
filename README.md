@@ -8,7 +8,7 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 
 | Phase | Workstream | State |
 | --- | --- | --- |
-| 0 Foundations | 0.1 Domain specification | Draft, pending domain-expert review |
+| 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review; case labels pending |
 | 0 Foundations | 0.2 to 0.7 | Not started |
 | 1 to 4 | | Not started |
 
@@ -18,8 +18,8 @@ Three tasks across two output formats. Each format has a deterministic conforman
 
 | Task | Input | Output | Deterministic check |
 | --- | --- | --- | --- |
-| RuleSpeak generation | Business intent | Rule statements | Template match and defect rules |
-| RuleSpeak validation | Rule statements | Verdict and defects | Same checker, plus SLM for semantic defects |
+| RuleSpeak generation | Business intent | Rule statements | Template match, traced diagnostics, separate outcomes |
+| RuleSpeak validation | Rule statements | Verdict and defects | Same checker, plus SLM for review and meaning findings |
 | Gherkin requirements | User requirement | Feature with scenarios | Official Cucumber parser plus profile rules |
 
 Specs: [docs/domain/](docs/domain/README.md). Machine-readable profiles: [src/determinagent/spec/](src/determinagent/spec/).

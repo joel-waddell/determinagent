@@ -12,16 +12,16 @@ function run(argv, input) {
 test('rulespeak, one statement', () => {
   const { code, out } = run(['check', 'rulespeak'], 'Each order must have at least one line item.\n')
   assert.equal(code, 0)
-  assert.ok(out.conformant)
-  assert.equal(out.template_id, 'RS-T01')
+  assert.equal(out.outcome.form, 'conforms')
+  assert.equal(out.template.id, 'RS-T01')
 })
 
 test('rulespeak, several lines', () => {
   const { code, out } = run(['check', 'rulespeak'], 'Each order must have a customer.\nOrders ship fast.\n')
   assert.equal(code, 1)
   assert.deepEqual(
-    out.map((o) => o.conformant),
-    [true, false],
+    out.map((o) => o.outcome.profile_acceptance),
+    ['accepted', 'rejected'],
   )
 })
 

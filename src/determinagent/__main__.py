@@ -1,7 +1,10 @@
 """Command line entry point: ``python -m determinagent check {rulespeak|gherkin} [FILE]``.
 
-Reads FILE (or stdin), prints the verdict as JSON, and exits 0 when the input
-is conformant, 1 when it is not. RuleSpeak input is one statement per line.
+Reads FILE (or stdin), prints the result as JSON, and exits 0 when every input
+passes, 1 when one does not. A Gherkin document passes when it is conformant. A
+RuleSpeak statement passes when the profile accepts it, its form conforms and
+local policy passes; review findings are reported but do not fail it. RuleSpeak
+input is one statement per line.
 """
 
 from __future__ import annotations
@@ -33,7 +36,8 @@ def main(argv: list[str] | None = None) -> int:
         out = [{"input": line, **r.to_dict()} for line, r in zip(lines, results, strict=True)]
     json.dump(out if len(out) != 1 else out[0], sys.stdout, indent=2)
     sys.stdout.write("\n")
-    return 0 if all(r.conformant for r in results) else 1
+    ok = [r.conformant for r in results] if args.profile == "gherkin" else [r.passed for r in results]
+    return 0 if all(ok) else 1
 
 
 if __name__ == "__main__":
