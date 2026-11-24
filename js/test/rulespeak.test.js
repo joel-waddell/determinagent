@@ -22,7 +22,7 @@ describe('cases', () => {
 })
 
 describe('vocabulary cases', () => {
-  for (const c of FIXTURES.vocabulary_cases) test(c.id, () => assertChecker(c, check(c.text, c.vocabulary)))
+  for (const c of FIXTURES.vocabulary_cases) test(c.id, () => assertChecker(c, check(c.text, c.vocabulary, undefined, c.proposed ?? null)))
 })
 
 test('every cited RS id exists and reaches a locator', () => {

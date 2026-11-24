@@ -748,3 +748,33 @@ vocabulary_cases:
     codes:
     - RS-VOC-001
   reason: Local vocabulary failure, reported apart from the RuleSpeak form verdict.
+- id: RS-V003
+  text: Each shipment must have a carrier.
+  vocabulary:
+  - order
+  - customer
+  proposed:
+  - shipment
+  checker:
+    profile_acceptance: accepted
+    form: conforms
+    review_required: true
+    local_policy: pass
+    term_hits: []
+    codes:
+    - RS-VOC-002
+  reason: The subject uses a term the response proposes; it holds once the user confirms the term.
+- id: RS-V004
+  text: Each parcel must have a carrier.
+  vocabulary:
+  - order
+  - customer
+  proposed:
+  - shipment
+  checker:
+    profile_acceptance: accepted
+    local_policy: fail
+    term_hits: []
+    codes:
+    - RS-VOC-001
+  reason: The subject uses neither an agreed nor a proposed term.

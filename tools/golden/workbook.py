@@ -51,6 +51,7 @@ SHEETS = {
             ("draft behavior", 10, lambda c: c["expected"]["behavior"]),
             ("draft reference statement(s)", 55, lambda c: "\n".join(c["expected"]["reference_statements"])),
             ("draft RS ids", 16, lambda c: ", ".join(c["expected"]["rs_refs"])),
+            ("draft vocabulary proposals", 35, lambda c: _proposals_text(c["expected"].get("vocabulary_proposals"))),
             ("draft note", 40, lambda c: c.get("draft_note") or ""),
         ],
         [
@@ -58,6 +59,7 @@ SHEETS = {
             ("behavior", 10, BEHAVIORS),
             ("reference statement(s), one per line", 55, None),
             ("RS ids", 16, None),
+            ("vocabulary proposals (term: definition, one per line)", 35, None),
             ("notes", 40, None),
         ],
     ),
@@ -136,6 +138,8 @@ README = [
     "form (T2): conforms, needs_revision or undetermined, as in the RuleSpeak-Agent.md response contract.",
     "behavior (T1, T3): draft = the system should produce output; ask = it should ask a clarifying question instead.",
     "RS ids: comma-separated, e.g. RS-04, RS-12.",
+    "Vocabulary (T1): the case's vocabulary is closed. A term the statement needs but the vocabulary lacks is proposed",
+    "  for the user to confirm, as 'term: definition', one per line. Correct it if the term or definition is wrong.",
     "Checker result (T2) is what the deterministic checker returns today. It is shown for context, not as the answer.",
     "J2 JavaScript: the model sees only the spec column. A case is right when the spec is clear enough to implement,",
     "  the reference solution is correct, and the hidden tests check what the behavior promises.",
@@ -251,6 +255,18 @@ def _split_lines(v: str) -> list[str]:
     return [x.strip() for x in str(v).splitlines() if x.strip()]
 
 
+def _proposals_text(props: list[dict] | None) -> str:
+    return "\n".join(f"{p['term']}: {p['definition']}" for p in props or [])
+
+
+def _proposals(v: str) -> list[dict[str, str]]:
+    out = []
+    for line in _split_lines(v):
+        term, _, definition = line.partition(":")
+        out.append({"term": term.strip(), "definition": definition.strip()})
+    return out
+
+
 def _split_ids(v: str) -> list[str]:
     return [x.strip() for x in str(v).replace(";", ",").split(",") if x.strip()]
 
@@ -297,16 +313,22 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
     wb = load_workbook(xlsx_path, data_only=True)
     counts = {"labelled": 0, "revise": 0, "dropped": 0, "unlabelled": 0}
     drop: set[str] = set()
-    for task, (title, draft_cols, expert_cols) in SHEETS.items():
+    for task, (title, _draft_cols, expert_cols) in SHEETS.items():
         if title not in wb.sheetnames:
             continue
         sh = wb[title]
-        n = len(draft_cols)
+        # Columns are found by header, so a workbook built before a column was
+        # added still imports: a missing column reads as blank.
+        header = list(next(sh.iter_rows(min_row=1, max_row=1, values_only=True)))
+        start = header.index("verdict")
+        pos = {h: i for i, h in enumerate(header) if i >= start and h}
+        names = [h for h, _, _ in expert_cols]
         for row in sh.iter_rows(min_row=2, values_only=True):
             if not row or not row[0]:
                 continue
             c = by_id[row[0]]
-            verdict, *vals = row[n : n + len(expert_cols)]
+            verdict = row[pos["verdict"]]
+            vals = [row[pos[h]] if h in pos and pos[h] < len(row) else None for h in names[1:]]
             vals = [v if v not in (None, "") else None for v in vals]
             if not verdict:
                 counts["unlabelled"] += 1
@@ -337,13 +359,15 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
                     if reason:
                         e["reason"] = reason
                 elif task == "rulespeak_generation":
-                    behavior, stmts, ids, _ = vals
+                    behavior, stmts, ids, props, _ = vals
                     if behavior:
                         e["behavior"] = behavior
                     if stmts:
                         e["reference_statements"] = _split_lines(stmts)
                     if ids:
                         e["rs_refs"] = _split_ids(ids)
+                    if props:
+                        e["vocabulary_proposals"] = _proposals(props)
                 else:
                     behavior, feature, checks, _ = vals
                     if behavior:

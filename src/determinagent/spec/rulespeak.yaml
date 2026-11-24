@@ -372,6 +372,17 @@ diagnostics:
     basis: local
     rs_refs: [RS-22]
     example: "(vocabulary: order, customer) Each shipment must have a carrier."
+  RS-VOC-002:
+    title: Subject uses a proposed vocabulary term
+    kind: local
+    disposition: review
+    description: >-
+      No agreed term occurs in the subject, but a term the response proposes
+      to add does. The vocabulary is closed, so the statement holds only once
+      the user confirms the proposed term (RS-22).
+    basis: local
+    rs_refs: [RS-22]
+    example: "(vocabulary: order, customer; proposed: shipment) Each shipment must have a carrier."
 
 lexicon:
   modals_needing_interpretation: [should, shall, can, could, will, would, might, "ought to", "need to", "needs to", "has to", "have to"]

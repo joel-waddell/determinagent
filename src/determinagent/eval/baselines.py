@@ -55,6 +55,8 @@ def oracle(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     ],
                     "questions": [],
                 }
+                if e.get("vocabulary_proposals"):
+                    out["vocabulary_proposals"] = list(e["vocabulary_proposals"])
         elif c["task"] == "js_generation":
             if e["behavior"] == "ask":
                 out = {"questions": [{"text": "Which behavior is meant?"}]}

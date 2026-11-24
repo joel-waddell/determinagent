@@ -94,6 +94,7 @@ The subject must open with *A, An, Each, Every, The* or *Only*. That restriction
 | RS-PRF-003 | Not one sentence ending in a full stop | profile | error | local | none |
 | RS-LOC-001 | Over the local word limit | local | warning | local | none |
 | RS-VOC-001 | No supplied vocabulary term found in the subject | local | error | local | RS-22 |
+| RS-VOC-002 | Subject uses a proposed vocabulary term | local | review | local | RS-22 |
 
 ## Golden case format
 
@@ -110,4 +111,5 @@ Here is how the two can differ. "A temporary badge must expire at midnight when 
 
 - The word lists are heuristics. That is why they produce review findings, not errors.
 - The subject is everything between the determiner and the keyword. A vocabulary hit means only that a term string occurs there (RS-22).
+- The vocabulary is closed. `check(statement, vocabulary, proposed=[...])` also takes the terms a response proposes. A subject that uses only a proposed term gets RS-VOC-002, a review finding, so the statement still passes and waits for the user to confirm the term. Only the subject is checked, so terms in the predicate or condition are not.
 - The checker doesn't parse English, and it can't check meaning (RS-12 to RS-18), lists (RS-26 to RS-29) or fidelity. Those are left to the SLM and review.

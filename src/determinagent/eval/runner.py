@@ -24,6 +24,7 @@ Records follow docs/evaluation.md, so ``score`` and ``compare`` read them.
 from __future__ import annotations
 
 import json
+import re
 import time
 from collections.abc import Iterable
 from typing import Any
@@ -54,7 +55,7 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
     "rulespeak_generation": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["statements", "questions"],
+        "required": ["statements", "questions", "vocabulary_proposals"],
         "properties": {
             "statements": {
                 "type": "array",
@@ -82,6 +83,19 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
                 },
             },
             "questions": _QUESTIONS,
+            "vocabulary_proposals": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["term", "definition", "rationale"],
+                    "properties": {
+                        "term": {"type": "string"},
+                        "definition": {"type": "string"},
+                        "rationale": {"type": "string"},
+                    },
+                },
+            },
         },
     },
     "rulespeak_validation": {
@@ -199,10 +213,21 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
         stmts, qs = reply["statements"], reply["questions"]
         if not stmts and not qs:
             out.append("return at least one statement or one question")
+        proposed = _proposed(reply)
+        agreed = {v.strip().lower() for v in vocab or ()}
+        for term in sorted(proposed & agreed):
+            out.append(f"{term!r} is already in the vocabulary; do not propose it")
+        for p in reply["vocabulary_proposals"]:
+            if not p["term"].strip() or not p["definition"].strip():
+                out.append("each vocabulary proposal needs a term and a one-line definition")
+        texts = " ".join(st["text"].lower() for st in stmts)
+        for term in sorted(proposed - agreed):
+            if not re.search(r"\b" + re.escape(term) + r"s?\b", texts):
+                out.append(f"the proposed term {term!r} is not used in any statement; drop it or use it")
         for i, st in enumerate(stmts, 1):
             if not st["trace"]:
                 out.append(f"statement {i} needs at least one trace entry")
-            r = rulespeak.check(st["text"], vocab)
+            r = rulespeak.check(st["text"], vocab, proposed=sorted(proposed))
             if r.passed and r.template is None:
                 out.append(f"statement {i} matches no template")
             elif not r.passed:
@@ -234,6 +259,10 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
     return out
 
 
+def _proposed(reply: dict[str, Any]) -> set[str]:
+    return {p["term"].strip().lower() for p in reply.get("vocabulary_proposals", []) if p["term"].strip()}
+
+
 def _is_rs_ref(ref: str) -> bool:
     return len(ref) == 5 and ref.startswith("RS-") and ref[3:].isdigit()
 
@@ -242,8 +271,9 @@ def _output(task: str, reply: dict[str, Any], request: dict[str, Any], chk: rule
     vocab = request["payload"].get("vocabulary")
     if task == "rulespeak_generation":
         statements = []
+        proposed = sorted(_proposed(reply))
         for st in reply["statements"]:
-            r = rulespeak.check(st["text"], vocab)
+            r = rulespeak.check(st["text"], vocab, proposed=proposed)
             item: dict[str, Any] = {
                 "text": st["text"],
                 "guidance_type": r.guidance_type,
@@ -256,7 +286,16 @@ def _output(task: str, reply: dict[str, Any], request: dict[str, Any], chk: rule
             if st["assumptions"]:
                 item["assumptions"] = [a[:500] for a in st["assumptions"] if a]
             statements.append(item)
-        return {"statements": statements, "questions": _questions(reply["questions"])}
+        out: dict[str, Any] = {"statements": statements, "questions": _questions(reply["questions"])}
+        proposals = []
+        for p in reply["vocabulary_proposals"]:
+            item = {"term": p["term"].strip()[:80], "definition": p["definition"].strip()[:500]}
+            if p["rationale"].strip():
+                item["rationale"] = p["rationale"].strip()[:500]
+            proposals.append(item)
+        if proposals:
+            out["vocabulary_proposals"] = proposals[:20]
+        return out
     if task == "rulespeak_validation":
         result: dict[str, Any] = {
             "statement_id": request["payload"]["statements"][0]["id"],

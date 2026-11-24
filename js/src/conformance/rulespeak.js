@@ -176,12 +176,16 @@ export const normalize = (statement) => statement.replace(/\s+/g, ' ').trim()
  * Check a single RuleSpeak statement.
  *
  * @param {string} statement
- * @param {string[] | null} [vocabulary] business terms. When given, the
- *   subject must contain one of them (a local policy check).
+ * @param {string[] | null} [vocabulary] agreed business terms. When given,
+ *   the subject must contain one of them (a local policy check). The
+ *   vocabulary is closed: `proposed` lists terms the response proposes to
+ *   add. A subject that uses only a proposed term needs the user's
+ *   confirmation (RS-VOC-002, review); any other subject fails (RS-VOC-001).
  * @param {ReturnType<typeof loadProfile>} [profile]
+ * @param {string[] | null} [proposed]
  * @returns {RuleSpeakResult}
  */
-export function check(statement, vocabulary = null, profile = defaultProfile()) {
+export function check(statement, vocabulary = null, profile = defaultProfile(), proposed = null) {
   const p = profile
   const s = normalize(statement)
   const result = new RuleSpeakResult(p.version, p.register)
@@ -253,8 +257,13 @@ export function check(statement, vocabulary = null, profile = defaultProfile()) 
   if (vocabulary != null && t !== null) {
     const subject = slots.subject ?? ''
     const terms = vocabulary.map((v) => v.trim().toLowerCase()).filter(Boolean)
-    result.termHits = terms.filter((v) => new RegExp(`\\b${escapeRegex(v)}s?\\b`).test(subject.toLowerCase()))
-    if (!result.termHits.length) add(p.finding('RS-VOC-001', `No vocabulary term found in subject "${subject}"`))
+    const termIn = (v) => new RegExp(`\\b${escapeRegex(v)}s?\\b`).test(subject.toLowerCase())
+    result.termHits = terms.filter(termIn)
+    if (!result.termHits.length) {
+      const hit = (proposed ?? []).map((v) => v.trim().toLowerCase()).find((v) => v && termIn(v))
+      if (hit) add(p.finding('RS-VOC-002', `Subject uses the proposed term "${hit}", which needs confirmation`))
+      else add(p.finding('RS-VOC-001', `No vocabulary term found in subject "${subject}"`))
+    }
   }
 
   return result
