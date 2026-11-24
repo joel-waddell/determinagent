@@ -2,6 +2,8 @@
 
 Nov 18, 2026 · @Joel
 
+> **Amendment 1 (Nov 24, 2026): a JavaScript domain, J2 first.** Joel decided to add JavaScript as a third domain, inside Phase 0 and before the 0.7 freeze. It is delivered in two tranches. Tranche 1 is J2 Generate with the execution sandbox (new workstream 0.8). Tranche 2 is J1 Advise and J3 Correct. The input and output contracts for all three are frozen with v1 now. TypeScript and frameworks are out of the POC. The JS checker is JavaScript-only, called from Python and exempt from the parity test. Joel labels. The changes are marked "Amendment 1" below, and the estimate is in [JavaScript domain](#javascript-domain-amendment-1).
+
 ## Purpose and design principles
 
 DeterminAgent routes structured requests to narrow, specialized small language models (SLMs) using deterministic logic, and improves itself from its own execution traces. This program delivers it in five phases, each closed by a measurable exit gate.
@@ -44,6 +46,8 @@ Phase 0 produces the yardstick and the contracts everything else is built agains
   - **RuleSpeak generation:** business intent in, conformant rule statements out.
   - **RuleSpeak validation:** rule statements in, conformance verdict and defects out.
   - **Gherkin requirements:** user requirement in, a feature with Given/When/Then scenarios out.
+  - **JavaScript generation (J2, Amendment 1, tranche 1):** a typed function spec in, an ES module that exports the function out. It is accepted if it parses, is lint-clean under the JS profile and passes the case's hidden tests in the sandbox.
+  - **JavaScript advise (J1) and correct (J3), tranche 2:** code in, findings out (J1); code and a failure signal in, a corrected module out (J3).
 
   Formalize each grammar: the approved RuleSpeak sentence templates and keywords, and the official Gherkin grammar. Much of the checking can then be deterministic (parser and template match), leaving the SLM only the semantic work.
 - **0.2 Golden evaluation set.** For each task, a versioned set of labelled cases: typed input, expected route, and expected output or an acceptance rubric. RuleSpeak validation cases carry labelled defects. Include edge cases and adversarial inputs, and a held-out split that is never used for tuning.
@@ -63,8 +67,9 @@ Phase 0 produces the yardstick and the contracts everything else is built agains
   4. Test with target users on real tasks. Measure completion, time taken, free-text leakage and schema rejection rate.
   5. Choose the pattern, then the UI stack.
 - **0.7 Contracts.** Freeze the typed input schema and the output schemas for each task, plus the handoff schemas for downstream tools and governance registers. Orchestration starts synchronous behind an interface, so a durable workflow engine can be added later without touching nodes.
+- **0.8 Execution sandbox (Amendment 1).** An isolated runner for model-written JavaScript. It has no network, file system or child processes, enforces CPU, memory and time limits, and uses a fixed clock and seed. It captures parse, lint and per-test results in the `js_execution` contract. Any escape attempt fails the gate.
 
-**Exit gate:** golden set v1 exists for the POC domains, baselines are measured and targets set, an off-the-shelf model is selected per task (or flagged for fine-tuning), the fine-tuning readiness verdict is in, the intake pattern is chosen, and the input and output schemas are frozen at v1.
+**Exit gate:** golden set v1 exists for the POC domains (with J2 under Amendment 1), the 0.8 sandbox runs J2 cases deterministically, baselines are measured and targets set, an off-the-shelf model is selected per task (or flagged for fine-tuning), the fine-tuning readiness verdict is in, the intake pattern is chosen, and the input and output schemas are frozen at v1.
 
 ## Phase 1: Proof of concept
 
@@ -230,5 +235,24 @@ The whole program is estimated at 218 to 360 agent sessions, with Phase 0 and Ph
 | 4.4 Routing inspector | 6–10 |  |
 
 \* Also needs human time that agent sessions don't cover: domain experts labelling golden cases (0.2) and target users taking part in testing (0.6).
+
+### JavaScript domain (Amendment 1)
+
+JavaScript adds an estimated 80 to 149 sessions for all three tasks. Tranche 1 (J2) costs 53 to 96 sessions, and tranche 2 (J1 and J3) costs 32 to 63, including 4 to 8 to reopen baselines. Freezing the J1 and J3 contracts now keeps that reopen cost near the low end. Phase 0's tranche 1 share breaks down as follows. The per-workstream split is my own allocation of the phase total.
+
+| Workstream | Tranche 1: J2 (agent sessions) | What it covers |
+| --- | --- | --- |
+| **Phase 0, tranche 1** | **27–46** | |
+| 0.1 Domain specification | 4–6 | JS profile (ESLint rule set as YAML), defect taxonomy, checker and fixtures, in `js/` only |
+| 0.2 Golden evaluation set \* | 7–12 | 300 J2 cases: spec, reference solution, hidden tests, verified by mutation |
+| 0.3 Baselines and targets | 2–4 | Test pass rate for candidates and the LLM baseline |
+| 0.4 SLM strategy | 2–4 | Off-the-shelf code models, J2 prompt |
+| 0.5 Fine-tuning readiness | 1 | J2 data inventory |
+| 0.6 Intake UX design sprint \* | 2–3 | Function-spec intake concept |
+| 0.7 Contracts | 3–4 | J1–J3 inputs and outputs, sandbox report, handoff (done as a draft) |
+| 0.8 Execution sandbox | 6–12 | Isolated runner, limits, fixed clock and seed, result capture |
+| Phases 1–4, tranche 1 | 26–50 | Phase 1 8–14, Phase 2 3–6, Phase 3 10–19, Phase 4 5–11 |
+
+Joel's labelling for tranche 1 is the 300 J2 cases: 20 to 40 hours, or 11 to 22 hours if he reviews the held-out split in full and samples 30% of the tuning split.
 
 Not included: fine-tuning itself, if Phase 0 finds it is needed (scoped from the readiness assessment), and the later move to a durable workflow engine.

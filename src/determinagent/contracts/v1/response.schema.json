@@ -37,6 +37,18 @@
     {
       "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "gherkin_requirements" } } },
       "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/gherkin_requirements_output" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "js_advice" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_advice_output" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "js_generation" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_generation_output" } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "resolved" }, "task": { "const": "js_correction" } } },
+      "then": { "properties": { "output": { "$ref": "urn:determinagent:contracts:v1:common#/$defs/js_correction_output" } } }
     }
   ]
 }

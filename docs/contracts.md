@@ -12,7 +12,7 @@ Every request entering DeterminAgent, every response leaving it, and every artif
 | `response` | `urn:determinagent:contracts:v1:response` | `status` (resolved, rejected or violated), a `reason_code` whenever the status is not resolved, the `route` taken, the task's `output`, and `receipt_head` (from Phase 2). |
 | `handoff-artifact` | `urn:determinagent:contracts:v1:handoff-artifact` | One accepted rule, advice statement or feature for a downstream tool, with its checker outcome, trace and source request. |
 | `governance-change` | `urn:determinagent:contracts:v1:governance-change` | One governance register entry: change type, versions, triggering receipts, gate results, approval and rollout. |
-| `common` | `urn:determinagent:contracts:v1:common` | Shared definitions: the three task inputs and outputs, `finding`, `trace_entry`, `question`, `route`, reason codes and exit statuses. |
+| `common` | `urn:determinagent:contracts:v1:common` | Shared definitions: the task inputs and outputs (three RuleSpeak and Gherkin tasks, three JavaScript tasks), `finding`, `trace_entry`, `question`, `route`, reason codes and exit statuses. |
 
 You can validate a single definition from `common` by name, for example `validate("rulespeak_generation_output", obj)`.
 
@@ -27,9 +27,28 @@ You can validate a single definition from `common` by name, for example `validat
 - **Every statement carries a trace.** A generated statement needs at least one `trace_entry` (a claim, RS ids, source and application), following the response contract in RuleSpeak-Agent.md. Validation results report `form` and `fidelity` with the same values as that contract.
 - **Checker findings are the finding contract.** The `finding` definition is exactly what the RuleSpeak checker returns. `basis` also allows `model`, for findings an SLM adds.
 - **Exit statuses come from Phase 2.2.** `resolved` needs an output and no reason code. `rejected` and `violated` need a `reason_code`.
-- **Reason codes are an open-ended enum.** New codes may be added, but an existing code is never given a new meaning: `SCHEMA_INVALID`, `PAYLOAD_TASK_MISMATCH`, `UNSUPPORTED_SCHEMA_VERSION`, `NO_ROUTE`, `INPUT_TOO_LARGE`, `OUTPUT_SCHEMA_INVALID`, `OUTPUT_NONCONFORMANT`, `MODEL_ERROR`, `MODEL_TIMEOUT` and `POLICY_VIOLATION`.
+- **Reason codes are an open-ended enum.** New codes may be added, but an existing code is never given a new meaning: `SCHEMA_INVALID`, `PAYLOAD_TASK_MISMATCH`, `UNSUPPORTED_SCHEMA_VERSION`, `NO_ROUTE`, `INPUT_TOO_LARGE`, `OUTPUT_SCHEMA_INVALID`, `OUTPUT_NONCONFORMANT`, `MODEL_ERROR`, `MODEL_TIMEOUT`, `POLICY_VIOLATION`, `SANDBOX_VIOLATION` and `SANDBOX_TIMEOUT`.
 - **The governance rules are in the schema.** A change cannot be `applied` without a passing gate. A harness or golden-set change cannot be applied without a named human approval. These are the plan's change-control rules, so no client can skip them.
 - **Hashes are SHA-256 in lowercase hex.** That covers `receipt_head` and the triggering receipts, ready for the Phase 2.3 receipt chain.
+
+## JavaScript tasks (Amendment 1)
+
+The program now has a JavaScript domain. J2 generation ships in tranche 1, and J1 advise and J3 correct follow in tranche 2. All three contracts are drafted now, so they freeze with v1 and tranche 2 needs no v2 change.
+
+| Task | Input | Output | Filled deterministically |
+| --- | --- | --- | --- |
+| `js_generation` (J2) | `spec`, a `js_function_spec`: name, typed params and return (JSDoc type strings), behavior, examples (args with returns or throws) and constraints | `module` (a `js_source`), assumptions, or `questions` instead | `execution`, the sandbox report |
+| `js_advice` (J1) | `source`, optional `focus` areas and a `question` | `findings` (`js_finding` with a line range, severity, category and basis), an optional `answer`, `questions` | Parser and lint findings (`basis` parser or lint) |
+| `js_correction` (J3) | `source` and a `failure` (test failure, runtime error or lint finding), optional visible `tests` and `spec` | The corrected `module`, an optional `patch` for review, `explanation`, or `questions` | `execution` |
+
+Design choices:
+
+- **The sandbox report is its own contract.** `js_execution` records whether the code parsed, the lint findings, per-test results, any blocked attempts (`network`, `filesystem`, `process`, `timeout`, `memory`, `nondeterminism`) and the environment (Node version, profile version, limits, fixed clock and seed), so a run can be replayed exactly. The model never fills it.
+- **Hidden tests stay out of the request.** A J2 request carries the visible examples only. The golden case holds the reference solution and the hidden tests.
+- **J3 returns a whole module, not just a patch.** The module is what the sandbox runs, so a malformed diff can't hide a failure. `patch` is derived from it for review.
+- **JS findings have their own shape.** `js_finding` codes are `JS-<AREA>-<NNN>` from the JS defect taxonomy, separate from the RuleSpeak and Gherkin `finding`.
+- **Code has a larger size cap.** `code_text` allows up to 20,000 characters (about 200 lines, the profile's scope). A `js_module` handoff must carry its `execution` report, and other artifact types must not.
+- **New reason codes:** `SANDBOX_VIOLATION` (the code tried something the sandbox blocks) and `SANDBOX_TIMEOUT`.
 
 ## Orchestration interface
 

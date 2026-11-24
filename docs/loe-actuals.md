@@ -11,3 +11,4 @@ The baseline estimates are in [program-of-work.md](program-of-work.md#level-of-e
 | 0.7 Contracts | 4–10 | 1 | v1.0 release candidate: request, response, task I/O, handoff and governance schemas, validators in both cores. |
 | 0.3 Baselines and targets | 6–10 | 1 | Harness, gate, oracle and checker baselines. Model baselines pending model access. |
 | 0.4 SLM strategy | 8–14 | 1 | Shortlist, selection method, prompts v1, adapters (Ollama/OpenAI-style, Claude) and the runner with checker-driven retries. Screening runs pending model access. |
+| 0.7 Contracts, JS (Amendment 1) | 3–4 (tranche 1 share) | 1 | J1–J3 inputs and outputs, sandbox report, handoff `js_module`, two reason codes; examples in both cores. |

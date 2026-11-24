@@ -13,7 +13,8 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.3 Baselines and targets | Harness and gate built; model-free checker baseline measured ([docs](docs/evaluation.md)); model baselines need model access |
 | 0 Foundations | 0.4 SLM strategy | Shortlist, selection method, prompts v1, model adapters and eval runner built; runs need model access ([docs](docs/slm-strategy.md)) |
 | 0 Foundations | 0.5 to 0.6 | Not started |
-| 0 Foundations | 0.7 Contracts | v1.0 release candidate; freezes after 0.6 ([docs](docs/contracts.md)) |
+| 0 Foundations | 0.7 Contracts | v1.0 release candidate, including the JavaScript J1–J3 contracts; freezes after 0.6 ([docs](docs/contracts.md)) |
+| 0 Foundations | 0.8 Execution sandbox (JavaScript, tranche 1) | Not started; planned in [Amendment 1](docs/program-of-work.md) |
 | 1 to 4 | | Not started |
 
 ## The POC domains
