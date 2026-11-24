@@ -1,0 +1,166 @@
+# DeterminAgent JavaScript profile (Phase 0.1, Amendment 1).
+#
+# What "well-formed" means for model-written JavaScript in the J tasks, and
+# the limits the 0.8 sandbox runs it under. The JS checker
+# (js/src/conformance/javascript.js) and the sandbox (js/src/sandbox/) read
+# this file. Only the JavaScript core implements it; Python calls it through
+# determinagent.sandbox. Spec: docs/domain/javascript.md.
+version: 0.1.0
+name: DeterminAgent JavaScript profile
+
+language:
+  # ES2022+ in the plan. The parser is pinned to ES2023, the newest level that
+  # Node 20 (the oldest supported runtime) implements in full.
+  ecma_version: 2023
+  source_type: module
+  max_lines: 200
+
+# A module may import nothing. Every J2 function is pure computation over its
+# arguments, so the standard library it needs is the ECMAScript built-ins.
+# An import of a Node built-in is reported and blocked; its violation kind
+# comes from the sandbox section below.
+imports:
+  allowed: []
+
+globals:
+  # Available inside the sandbox besides the ECMAScript built-ins.
+  # console is a no-op stub there, so logging is harmless but flagged.
+  provided: [console]
+  # Not available. Touching one at run time is a sandbox violation of this kind.
+  blocked:
+    process: process
+    require: process
+    module: process
+    exports: process
+    __dirname: filesystem
+    __filename: filesystem
+    Buffer: process
+    global: process
+    Deno: process
+    Bun: process
+    fetch: network
+    XMLHttpRequest: network
+    WebSocket: network
+    EventSource: network
+    navigator: network
+    crypto: nondeterminism
+    performance: nondeterminism
+    setTimeout: nondeterminism
+    setInterval: nondeterminism
+    setImmediate: nondeterminism
+
+sandbox:
+  defaults:
+    timeout_ms: 1000        # per test, and for loading the module
+    memory_mb: 64           # V8 old-space limit of the child process
+    clock: "2026-01-01T00:00:00Z"
+    seed: 42                # Math.random is seeded per test
+    timezone: UTC
+  # Violation kind for an import of a Node built-in. Anything else imported is "process".
+  module_violations:
+    filesystem: [fs, fs/promises, path, os, module, url]
+    network: [net, http, https, http2, dgram, dns, dns/promises, tls, inspector]
+    process: [child_process, worker_threads, cluster, vm, v8, process, wasi, async_hooks]
+
+acceptance: >-
+  A module is accepted when it parses, has no error-severity finding, passes
+  every test it is run with, and the sandbox records no violation.
+  Warnings are reported but do not fail it.
+
+# The JS defect taxonomy. Codes are JS-<AREA>-<NNN> (the js_finding contract).
+# Areas: SYN syntax, MOD module shape, SEC security and isolation,
+# DET determinism, COR correctness, STY readability and idiom, TST test results.
+codes:
+  JS-SYN-001: {category: syntax, severity: error, title: The module does not parse}
+  JS-MOD-001: {category: design, severity: error, title: The spec's function is not exported}
+  JS-MOD-002: {category: design, severity: error, title: The function is exported the wrong way (named or default)}
+  JS-MOD-003: {category: design, severity: error, title: The function is async when the spec says it is not}
+  JS-MOD-004: {category: security, severity: error, title: The module imports something}
+  JS-MOD-005: {category: design, severity: error, title: The exported name is not a function}
+  JS-MOD-006: {category: design, severity: warning, title: The function declares a different number of parameters than the spec}
+  JS-MOD-007: {category: readability, severity: warning, title: The module is longer than the profile allows}
+  JS-SEC-001: {category: security, severity: error, title: Code is generated from strings (eval, Function, string timers)}
+  JS-SEC-002: {category: security, severity: error, title: A host global is used (process, require, fetch and others)}
+  JS-SEC-003: {category: security, severity: error, title: A built-in prototype is changed or __proto__ is used}
+  JS-SEC-004: {category: security, severity: error, title: A read-only global is reassigned}
+  JS-DET-001: {category: correctness, severity: warning, title: The result depends on the clock or on randomness}
+  JS-COR-001: {category: correctness, severity: error, title: An undefined variable is used}
+  JS-COR-002: {category: correctness, severity: error, title: A constant is reassigned}
+  JS-COR-003: {category: correctness, severity: error, title: An object literal has a duplicate key}
+  JS-COR-004: {category: correctness, severity: error, title: Code can never run}
+  JS-COR-005: {category: correctness, severity: error, title: A comparison with NaN or an invalid typeof}
+  JS-COR-006: {category: correctness, severity: error, title: A switch case falls through}
+  JS-COR-007: {category: correctness, severity: error, title: An assignment is used as a condition}
+  JS-COR-008: {category: correctness, severity: error, title: A finally block overrides the result}
+  JS-COR-009: {category: correctness, severity: error, title: A number literal loses precision}
+  JS-COR-010: {category: correctness, severity: error, title: An array callback does not return a value}
+  JS-COR-011: {category: correctness, severity: error, title: A value is compared with itself}
+  JS-COR-012: {category: correctness, severity: error, title: A negation applies to the wrong operand}
+  JS-COR-013: {category: correctness, severity: error, title: A debugger statement is left in}
+  JS-COR-014: {category: correctness, severity: warning, title: A condition is always true or always false}
+  JS-COR-015: {category: correctness, severity: error, title: A function or class is redeclared, or a parameter name repeats}
+  JS-COR-016: {category: correctness, severity: error, title: A regular expression is invalid or has an empty character class}
+  JS-COR-017: {category: correctness, severity: error, title: A sparse array or an unexpected multiline expression}
+  JS-COR-018: {category: correctness, severity: error, title: A loop runs the wrong way}
+  JS-STY-001: {category: readability, severity: warning, title: A variable is declared but never used}
+  JS-STY-002: {category: idiom, severity: warning, title: Loose equality (== or !=)}
+  JS-STY-003: {category: idiom, severity: warning, title: var instead of let or const}
+  JS-STY-004: {category: idiom, severity: warning, title: let where const would do}
+  JS-STY-005: {category: readability, severity: warning, title: Console output is left in}
+  JS-STY-006: {category: idiom, severity: warning, title: An Object.prototype method is called on the object directly}
+  JS-STY-007: {category: readability, severity: warning, title: An empty block}
+  JS-TST-001: {category: correctness, severity: error, title: A test fails}
+  JS-TST-002: {category: correctness, severity: error, title: A test times out}
+
+# ESLint rule set. Each rule maps to one code. Severity comes from the code.
+# The module-shape codes JS-MOD-001 to -006 come from the profile's own rule
+# (determinagent/spec-export), configured from the J2 function spec.
+rules:
+  - {rule: no-restricted-imports, code: JS-MOD-004, options: [{patterns: ["*"]}]}
+  - {rule: no-restricted-syntax, code: JS-MOD-004, options: [{selector: ImportExpression, message: Dynamic import is not allowed.}]}
+  - {rule: max-lines, code: JS-MOD-007, options: [{max: 200, skipBlankLines: false, skipComments: false}]}
+  - {rule: no-eval, code: JS-SEC-001}
+  - {rule: no-implied-eval, code: JS-SEC-001}
+  - {rule: no-new-func, code: JS-SEC-001}
+  - {rule: no-restricted-globals, code: JS-SEC-002, options: from_blocked_globals}
+  - {rule: no-extend-native, code: JS-SEC-003}
+  - {rule: no-proto, code: JS-SEC-003}
+  - {rule: no-global-assign, code: JS-SEC-004}
+  - {rule: no-shadow-restricted-names, code: JS-SEC-004}
+  - rule: no-restricted-properties
+    code: JS-DET-001
+    options:
+      - {object: Math, property: random, message: Math.random is seeded in the sandbox; a spec function should not depend on it.}
+      - {object: Date, property: now, message: The sandbox clock is fixed; a spec function should not depend on it.}
+  - {rule: no-undef, code: JS-COR-001}
+  - {rule: no-const-assign, code: JS-COR-002}
+  - {rule: no-dupe-keys, code: JS-COR-003}
+  - {rule: no-unreachable, code: JS-COR-004}
+  - {rule: use-isnan, code: JS-COR-005}
+  - {rule: valid-typeof, code: JS-COR-005}
+  - {rule: no-fallthrough, code: JS-COR-006}
+  - {rule: no-cond-assign, code: JS-COR-007}
+  - {rule: no-unsafe-finally, code: JS-COR-008}
+  - {rule: no-loss-of-precision, code: JS-COR-009}
+  - {rule: array-callback-return, code: JS-COR-010}
+  - {rule: no-self-compare, code: JS-COR-011}
+  - {rule: no-unsafe-negation, code: JS-COR-012}
+  - {rule: no-debugger, code: JS-COR-013}
+  - {rule: no-constant-condition, code: JS-COR-014}
+  - {rule: no-constant-binary-expression, code: JS-COR-014}
+  - {rule: no-func-assign, code: JS-COR-015}
+  - {rule: no-class-assign, code: JS-COR-015}
+  - {rule: no-dupe-args, code: JS-COR-015}
+  - {rule: no-redeclare, code: JS-COR-015}
+  - {rule: no-invalid-regexp, code: JS-COR-016}
+  - {rule: no-empty-character-class, code: JS-COR-016}
+  - {rule: no-sparse-arrays, code: JS-COR-017}
+  - {rule: no-unexpected-multiline, code: JS-COR-017}
+  - {rule: for-direction, code: JS-COR-018}
+  - {rule: no-unused-vars, code: JS-STY-001}
+  - {rule: eqeqeq, code: JS-STY-002, options: [smart]}
+  - {rule: no-var, code: JS-STY-003}
+  - {rule: prefer-const, code: JS-STY-004}
+  - {rule: no-console, code: JS-STY-005}
+  - {rule: no-prototype-builtins, code: JS-STY-006}
+  - {rule: no-empty, code: JS-STY-007}

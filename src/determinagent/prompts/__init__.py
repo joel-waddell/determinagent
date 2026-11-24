@@ -21,7 +21,7 @@ import yaml
 from ..conformance import gherkin, rulespeak
 
 VERSION = "v1"
-TASKS = ("rulespeak_generation", "rulespeak_validation", "gherkin_requirements")
+TASKS = ("rulespeak_generation", "rulespeak_validation", "gherkin_requirements", "js_generation")
 
 
 @dataclass(frozen=True)
@@ -75,6 +75,22 @@ def _profile_facts() -> dict[str, str]:
     }
 
 
+def _js_facts(spec: dict[str, Any]) -> dict[str, str]:
+    raw = yaml.safe_load(resources.files("determinagent.spec").joinpath("javascript.yaml").read_text(encoding="utf-8"))
+    name = spec["name"]
+    export = (
+        f"export default function {name}(...) {{ ... }}"
+        if spec.get("export") == "default"
+        else f"export function {name}(...) {{ ... }} (a named export called {name})"
+    )
+    return {
+        "ecma_version": str(raw["language"]["ecma_version"]),
+        "max_lines": str(raw["language"]["max_lines"]),
+        "blocked_globals": ", ".join(raw["globals"]["blocked"]),
+        "export_rule": export,
+    }
+
+
 def render(task: str, request: dict[str, Any], extra: dict[str, str] | None = None, version: str = VERSION) -> Prompt:
     """Render the prompt for a v1 request. ``extra`` supplies runtime values such as checker output."""
     t = load(task, version)
@@ -88,5 +104,8 @@ def render(task: str, request: dict[str, Any], extra: dict[str, str] | None = No
         values["statement"] = pay["statements"][0]["text"]
     elif task == "gherkin_requirements":
         values["requirement"] = json.dumps(pay["requirement"], indent=2, ensure_ascii=False)
+    elif task == "js_generation":
+        values.update(_js_facts(pay["spec"]))
+        values["spec"] = json.dumps(pay["spec"], indent=2, ensure_ascii=False)
     values.update(extra or {})
     return Prompt(task, t.version, t.system.substitute(values), t.user.substitute(values))

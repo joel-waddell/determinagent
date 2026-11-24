@@ -9,7 +9,7 @@ from determinagent.conformance import gherkin, rulespeak
 
 ROOT = Path(__file__).parent.parent
 BATCHES = sorted((ROOT / "golden" / "v1").glob("*.yaml"))
-TASKS = {"rulespeak_generation", "rulespeak_validation", "gherkin_requirements"}
+TASKS = {"rulespeak_generation", "rulespeak_validation", "gherkin_requirements", "js_generation"}
 
 
 def load(p):
@@ -29,7 +29,7 @@ def test_case_is_well_formed(case):
     assert case["task"] in TASKS
     assert case["split"] in {"dev", "heldout"}
     assert case["expected"]["route"] == case["task"]
-    assert case["label"]["status"] in {"draft", "labelled"}
+    assert case["label"]["status"] in {"draft", "labelled", "revise"}
     register = rulespeak.default_profile().register
     assert set(case["expected"].get("rs_refs", [])) <= set(register)
 
@@ -90,3 +90,47 @@ def test_workbook_round_trip(tmp_path):
     assert "T2-P003" not in cases
     assert cases["T1-P001"]["label"]["status"] == "draft"
     assert batch.read_text(encoding="utf-8").startswith("# DeterminAgent golden set v1")
+
+
+@pytest.mark.skipif(importlib.util.find_spec("openpyxl") is None, reason="openpyxl not installed")
+def test_workbook_round_trip_j2(tmp_path):
+    from openpyxl import load_workbook
+
+    spec = importlib.util.spec_from_file_location("workbook", ROOT / "tools" / "golden" / "workbook.py")
+    wb_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wb_mod)
+
+    batch = tmp_path / "j2.yaml"
+    shutil.copy(ROOT / "golden" / "v1" / "j2-pilot.yaml", batch)
+    xlsx = tmp_path / "j2.xlsx"
+    wb_mod.build(batch, xlsx)
+
+    wb = load_workbook(xlsx)
+    assert wb.sheetnames == ["README", "J2 JavaScript"]
+    sh = wb["J2 JavaScript"]
+    assert "slugify(title: string) -> string" in sh.cell(2, 3).value
+    assert 'empty string: ("") -> ""' in sh.cell(2, 6).value
+    first_yellow = len(wb_mod.SHEETS["js_generation"][1]) + 1
+    sh.cell(2, first_yellow, "Agree")
+    sh.cell(3, first_yellow, "Correct")
+    sh.cell(3, first_yellow + 2, "Also test a max of 2.")
+    sh.cell(4, first_yellow, "Drop")
+    wb.save(xlsx)
+
+    counts = wb_mod.import_labels(batch, xlsx, "tester")
+    assert counts == {"labelled": 1, "revise": 1, "dropped": 1, "unlabelled": 17}
+    before = {c["id"]: c for c in load(ROOT / "golden" / "v1" / "j2-pilot.yaml")}
+    cases = {c["id"]: c for c in load(batch)}
+    assert cases["J2-P001"]["label"]["status"] == "labelled"
+    assert cases["J2-P002"]["label"] == {
+        "status": "revise",
+        "labelled_by": "tester",
+        "verdict": "Correct",
+        "notes": None,
+        "requested_changes": "Also test a max of 2.",
+    }
+    assert "J2-P003" not in cases
+    for cid in ("J2-P001", "J2-P005", "J2-P016"):
+        assert cases[cid]["expected"] == before[cid]["expected"]
+        assert cases[cid]["input"] == before[cid]["input"]
+    assert "reference_solution: |" in batch.read_text(encoding="utf-8")

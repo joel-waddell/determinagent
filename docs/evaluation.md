@@ -70,3 +70,29 @@ All five misses come from one gap. The checker's `form` verdict looks only at fo
 - **SLM candidates:** off-the-shelf small models with prompt optimization (0.4).
 
 The runner, adapters and prompts for both are built ([slm-strategy.md](slm-strategy.md)). What is missing is model access, which is the open question for Joel in 0.4 and 0.5.
+
+## J2 JavaScript generation (Amendment 1)
+
+A J2 case succeeds when the response is contract-valid, resolved and routed to `js_generation`, and then:
+
+- **ask cases:** the output has questions and no module;
+- **draft cases:** the module is accepted by the [sandbox](sandbox.md): it parses, has no error-severity lint finding, passes the visible examples and every hidden test, and records no violation.
+
+`wellformed` means the module parses with no lint errors. The scorer runs every J2 module in one sandbox batch.
+
+Two metrics are J2-only, and both are in [`config/gate.yaml`](../config/gate.yaml):
+
+| Metric | Definition | Gate |
+| --- | --- | --- |
+| `js_test_pass_rate` | Mean share of a case's tests passed, over draft cases (a case with no module scores 0) | Tracked, with a 1-point tolerance |
+| `sandbox_violation_rate` | Share of J2 cases whose module triggered any sandbox violation | Target 0, no tolerance: any violation fails the gate |
+
+The runner gives the model only the visible examples. It runs them in the sandbox, and lint errors, failing examples and violations are the retry feedback. The response's `execution` field is that visible-example report. The hidden tests run only in the scorer.
+
+```sh
+python -m determinagent.eval baseline golden/v1/j2-pilot.yaml oracle j2-oracle.jsonl
+python -m determinagent.eval score golden/v1/j2-pilot.yaml j2-oracle.jsonl          # 100%, checks the harness
+python -m determinagent.eval run golden/v1/j2-pilot.yaml --model ollama:qwen3:4b --out j2-qwen.jsonl
+```
+
+No J2 model baseline has been run yet. It needs the same model access as the other tasks.

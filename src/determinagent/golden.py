@@ -18,6 +18,8 @@ def to_request(case: dict[str, Any]) -> dict[str, Any]:
             payload["vocabulary"] = list(inp["vocabulary"])
     elif task == "gherkin_requirements":
         payload = {"requirement": dict(inp["requirement"])}
+    elif task == "js_generation":
+        payload = {"spec": dict(inp["spec"])}
     else:
         raise ValueError(f"Unknown task {task!r}")
     return {

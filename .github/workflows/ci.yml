@@ -17,9 +17,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
+      # Node is needed for the J2 tests, which call the JS checker and sandbox.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+        env:
+          DETERMINAGENT_REQUIRE_SANDBOX: "1"
 
   javascript:
     runs-on: ubuntu-latest

@@ -15,18 +15,21 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.5 Fine-tuning readiness | Draft verdict per resource; final once the 0.4 screen is in ([docs](docs/finetune-readiness.md)) |
 | 0 Foundations | 0.6 Intake UX design sprint | Users mapped, three concepts, two clickable mock-ups; user testing needs Joel ([docs](docs/intake-ux.md)) |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate, including the JavaScript J1–J3 contracts; freezes after 0.6 ([docs](docs/contracts.md)) |
-| 0 Foundations | 0.8 Execution sandbox (JavaScript, tranche 1) | Not started; planned in [Amendment 1](docs/program-of-work.md) |
+| 0 Foundations | 0.1 Domain specification (JavaScript, tranche 1) | JS profile v0.1.0: ESLint rule set, defect taxonomy and checker ([docs](docs/domain/javascript.md)) |
+| 0 Foundations | 0.2 to 0.4 JavaScript J2 (tranche 1) | Pilot of 20 J2 cases with hidden tests, mutation-checked, awaiting labels; scorer, runner and prompt hooks built ([docs](docs/golden-set.md#j2-javascript-generation-amendment-1)) |
+| 0 Foundations | 0.8 Execution sandbox (JavaScript, tranche 1) | Built: isolated runner, limits, fixed clock and seed, escape suite ([docs](docs/sandbox.md)) |
 | 1 to 4 | | Not started |
 
 ## The POC domains
 
-Three tasks across two output formats. Each format has a deterministic conformance checker, so the SLM only does the semantic work.
+Four tasks across three output formats. Each format has a deterministic conformance checker, so the SLM only does the semantic work. JavaScript J1 and J3 follow in tranche 2.
 
 | Task | Input | Output | Deterministic check |
 | --- | --- | --- | --- |
 | RuleSpeak generation | Business intent | Rule statements | Template match, traced diagnostics, separate outcomes |
 | RuleSpeak validation | Rule statements | Verdict and defects | Same checker, plus SLM for review and meaning findings |
 | Gherkin requirements | User requirement | Feature with scenarios | Official Cucumber parser plus profile rules |
+| JavaScript generation (J2) | Typed function spec | ES module exporting the function | Parser, ESLint profile and hidden tests in the sandbox |
 
 Specs: [docs/domain/](docs/domain/README.md). Machine-readable profiles: [src/determinagent/spec/](src/determinagent/spec/).
 
@@ -60,17 +63,19 @@ Both CLIs print the verdict as the same JSON and exit 0 when the input is confor
 
 ```
 docs/                     plan, domain specs, golden-set design, effort actuals
-golden/v1/                golden evaluation set batches (YAML)
-tools/golden/             labelling workbook builder and importer
+golden/v1/                golden evaluation set batches (YAML), J2 in j2-*.yaml
+tools/golden/             labelling workbook builder and importer, J2 verifier
 config/gate.yaml          evaluation gate targets and tolerances
 js/                       JavaScript core
-  src/conformance/        deterministic checkers
-  bin/                    CLI
+  src/conformance/        deterministic checkers (the JavaScript checker lives only here)
+  src/sandbox/            execution sandbox for model-written JavaScript (0.8)
+  bin/                    CLIs: determinagent, js-sandbox
   test/                   tests, including the Python parity test
 src/determinagent/        Python core
   spec/                   versioned conformance profiles (YAML), shared by both cores
   contracts/v1/           JSON Schema contracts, shared by both cores
   conformance/            deterministic checkers
+  sandbox.py              calls the JS checker and sandbox through Node
   prompts/v1/             versioned task prompts, rendered from the profiles
   models.py               model adapters (Ollama/OpenAI-style, Claude)
   eval/                   scoring, gate, baselines and the model runner

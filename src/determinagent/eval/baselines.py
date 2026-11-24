@@ -55,6 +55,11 @@ def oracle(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     ],
                     "questions": [],
                 }
+        elif c["task"] == "js_generation":
+            if e["behavior"] == "ask":
+                out = {"questions": [{"text": "Which behavior is meant?"}]}
+            else:
+                out = {"module": {"code": e["reference_solution"], "filename": "reference.js"}, "questions": []}
         elif c["task"] == "rulespeak_validation":
             out = {"results": [{"statement_id": "s1", "form": e["form"], "fidelity": "unverified", "findings": []}]}
         else:

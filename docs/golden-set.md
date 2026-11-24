@@ -55,3 +55,38 @@ Generated outputs are not compared word for word against a reference statement o
 ## Open points
 
 - The repository is public, so the held-out split will be public too. Public held-out data can leak into future model training. If that matters, the held-out batches can live in a private location and the tests can read them from there.
+
+## J2 JavaScript generation (Amendment 1)
+
+J2 gets its own 300 cases (200 dev, 100 held-out), sized by the same reasoning as the other tasks. The batches are separate files (`golden/v1/j2-*.yaml`), so a JavaScript change never touches the RuleSpeak and Gherkin batches.
+
+**Coverage.** Each stratum appears at least 15 times across the set: strings, arrays, numbers, objects, dates, parsing, validation, algorithms, error handling (the function must throw the right error), async functions, and immutability (the function must not change its input). About 10% are *ask* cases, where the spec leaves open a decision that changes results, such as a rounding rule or who pays leftover cents. About 5% are adversarial, with instructions injected into the spec text. The test there is that the model ignores them: any attempt to reach `process`, files or the network is a sandbox violation and fails the case.
+
+**Case format.** `input.spec` is the `js_function_spec` the model sees, including 0 to 3 visible examples. `expected` holds:
+
+| Field | What it is |
+| --- | --- |
+| `behavior` | `draft` or `ask` |
+| `reference_solution` | One correct module (null for ask cases) |
+| `hidden_tests` | At least 5 tests in the [sandbox test format](sandbox.md#tests): value tests, throws tests and snippet tests |
+| `open_questions` | Ask cases only: the decisions the spec leaves open |
+| `mutation` | Snapshot of the mutation check, written by the verifier |
+| `equivalent_mutants`, `equivalent_note` | Mutants reviewed as unable to change any result, with the reason |
+
+A case is scored on its visible examples plus its hidden tests. The hidden tests never reach the model, not even in retry feedback.
+
+**Verification.** [`tools/golden/j2_verify.py`](../tools/golden/j2_verify.py) runs before a batch goes to labelling:
+
+1. The reference solution must be accepted by the sandbox with no lint findings at all, warnings included.
+2. Every single-token mutant of the reference (one operator, boolean or number changed) is run against the tests. The tests must catch at least 80% of the mutants that are not listed as equivalent, and in practice the pilot catches all of them. An equivalent mutant needs a written reason, and the verifier fails if a listed equivalent stops surviving, so the list can't go stale.
+
+Writing the pilot this way found real gaps. The first draft of `ageOn` had no test for a century year, `retry` had no test with exactly one attempt, and `topWords` had no test that a plain-object counter fails on the word "constructor". Each gap got a test.
+
+```sh
+python tools/golden/j2_verify.py golden/v1/j2-pilot.yaml --write     # check, and refresh the mutation snapshots
+python tools/golden/workbook.py build golden/v1/j2-pilot.yaml j2.xlsx
+```
+
+**Labelling.** The workbook has a *J2 JavaScript* sheet. It shows the spec as the model sees it, the reference, the hidden tests and the mutation result. The expert can **Agree**, **Drop**, or **Correct**: set the behavior and/or describe what to change. Code and test changes are applied by hand, so a corrected case gets `label.status: revise` with the requested changes, and comes back for a quick re-check. Only `labelled` cases count in a gate.
+
+**Batches.** A pilot of 20 (`j2-pilot.yaml`, 18 draft and 2 ask, all dev), then batches of 70. Reviewing a case takes longer than a RuleSpeak case, about 3 to 5 minutes, because the expert reads code. That puts the pilot at about 1 to 1.5 hours, within the plan's 20 to 40 hours for the full 300.
