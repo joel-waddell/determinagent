@@ -9,3 +9,4 @@ The baseline estimates are in [program-of-work.md](program-of-work.md#level-of-e
 | JavaScript core | (not estimated) | 1 | Port alongside Python, shared fixtures, parity test |
 | 0.2 Golden evaluation set | 16–24 | 1 | Design, sizing, pilot batch of 60, workbook tooling. Labelling is expert time, not counted. |
 | 0.7 Contracts | 4–10 | 1 | v1.0 release candidate: request, response, task I/O, handoff and governance schemas, validators in both cores. |
+| 0.3 Baselines and targets | 6–10 | 1 | Harness, gate, oracle and checker baselines. Model baselines pending model access. |
