@@ -17,6 +17,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6", "openpyxl>=3.1"]
+# Claude baseline runs (determinagent.models.AnthropicAdapter).
+models = ["anthropic>=2.13"]
 
 [project.scripts]
 determinagent = "determinagent.__main__:main"
@@ -27,6 +29,7 @@ where = ["src"]
 [tool.setuptools.package-data]
 "determinagent.spec" = ["*.yaml"]
 "determinagent.contracts.v1" = ["*.json"]
+"determinagent.prompts" = ["v1/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
