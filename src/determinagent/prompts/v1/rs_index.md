@@ -1,0 +1,30 @@
+RS id index (paraphrased; cite these ids in traces):
+- RS-01 form: a rule uses one rule keyword, must or only.
+- RS-02 form: advice uses may or need not, and no rule keyword.
+- RS-03 meaning: may means permission; settle can/should/shall before rewriting.
+- RS-04 form: obligation with must, conditional obligation with must ... if.
+- RS-05 form: computation, result as subject, "must be computed as".
+- RS-06 form: sufficient classification, "must be considered ... if".
+- RS-07 form: procedure at an occurrence, "must be performed ... when".
+- RS-08 form: prohibition with must not, with any delimiting condition.
+- RS-09 form: restricted permission, "may ... only if" or "may ... only <qualification>".
+- RS-10 form: positive permission as advice with may; flag "may ... if".
+- RS-11 form: exemption as advice with need not.
+- RS-12 meaning: "must A if C" requires A where C holds and leaves other cases open.
+- RS-13 meaning: "may A only if C" makes C necessary for A.
+- RS-14 meaning: a qualified permission or exemption leaves cases outside it open.
+- RS-15 meaning: if = while a condition holds; when = at an occurrence; keep deadlines distinct from triggers.
+- RS-16 application: "may ... only after" for a required prior event.
+- RS-17 principle: preserve the user's facts; surface ambiguity in thresholds, units, quantifiers, identity, timing, exceptions and direction; leave missing decisions explicit.
+- RS-18 principle: state exceptions explicitly and check how they interact.
+- RS-19 form: a complete declarative sentence with an explicit subject.
+- RS-20 style: subject first, qualifications after the main clause, singular subject.
+- RS-21 style: choose the subject that makes scope precise.
+- RS-22 principle: use agreed business terms and clear fact relationships.
+- RS-23 style: specific qualifications; no vague references or "etc.".
+- RS-24 principle: declarative business guidance, not system or process steps.
+- RS-25 style: name reused thresholds, calculations and classifications.
+- RS-26 form: "the following" lists with all, any, at least N, at most N, exactly N.
+- RS-27 meaning: disambiguate and/or grouping and exclusivity.
+- RS-28 style: extensible lists; avoid both/either as scaffolding.
+- RS-29 style: "true" in a list lead-in is optional.

@@ -11,7 +11,8 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review; case labels pending |
 | 0 Foundations | 0.2 Golden evaluation set | Design set; pilot batch of 60 drafted, awaiting labels ([docs](docs/golden-set.md)) |
 | 0 Foundations | 0.3 Baselines and targets | Harness and gate built; model-free checker baseline measured ([docs](docs/evaluation.md)); model baselines need model access |
-| 0 Foundations | 0.4 to 0.6 | Not started |
+| 0 Foundations | 0.4 SLM strategy | Shortlist, selection method, prompts v1, model adapters and eval runner built; runs need model access ([docs](docs/slm-strategy.md)) |
+| 0 Foundations | 0.5 to 0.6 | Not started |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate; freezes after 0.6 ([docs](docs/contracts.md)) |
 | 1 to 4 | | Not started |
 
@@ -68,6 +69,9 @@ src/determinagent/        Python core
   spec/                   versioned conformance profiles (YAML), shared by both cores
   contracts/v1/           JSON Schema contracts, shared by both cores
   conformance/            deterministic checkers
+  prompts/v1/             versioned task prompts, rendered from the profiles
+  models.py               model adapters (Ollama/OpenAI-style, Claude)
+  eval/                   scoring, gate, baselines and the model runner
 tests/                    Python tests
   fixtures/               test cases shared by both cores
 ```

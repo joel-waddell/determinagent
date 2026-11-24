@@ -12,7 +12,7 @@ A run is a JSON Lines file with one record per golden case:
  "first_pass_wellformed": true, "system": "qwen-2.5-3b-prompt-v1"}
 ```
 
-`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure.
+`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure. Model runs from `eval run` also record `prompt_version`, `input_tokens`, `output_tokens` and, when retries ran out, the last `problems` ([slm-strategy.md](slm-strategy.md#how-a-run-works)).
 
 ## How a case is scored
 
@@ -69,4 +69,4 @@ All five misses come from one gap. The checker's `form` verdict looks only at fo
 - **LLM baseline:** a general-purpose LLM on all three tasks, for the quality and cost comparison.
 - **SLM candidates:** off-the-shelf small models with prompt optimization (0.4).
 
-Both need model access, which is the open question for Joel in 0.4 and 0.5.
+The runner, adapters and prompts for both are built ([slm-strategy.md](slm-strategy.md)). What is missing is model access, which is the open question for Joel in 0.4 and 0.5.
