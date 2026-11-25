@@ -22,7 +22,7 @@ The baseline B0 result ([evaluation.md](evaluation.md#b0-deterministic-checker-o
 
 1. It builds the v1 request for the case (`golden.to_request`).
 2. It renders the task prompt from `src/determinagent/prompts/v1/`. The template list, keywords, word limit and lexicon examples are rendered from the profile files, so the prompt can't drift from the checker.
-3. It asks the model for a reply that matches the task's reply schema. For Gherkin, the reply gives the feature's parts, and the runner writes the file (`eval/runner.py`, `REPLY_SCHEMAS`). The backend constrains decoding to that schema where it can: `response_format` with `json_schema` for OpenAI-style servers (Ollama, vLLM, llama.cpp server) and `output_config.format` for Claude.
+3. It asks the model for a reply that matches the task's reply schema. For Gherkin, the reply gives the feature's parts, each scenario lists the criteria it tests, and the runner writes the file and the coverage (`eval/runner.py`, `REPLY_SCHEMAS`). The backend constrains decoding to that schema where it can: `response_format` with `json_schema` for OpenAI-style servers (Ollama, vLLM, llama.cpp server) and `output_config.format` for Claude.
 4. It checks the reply against the schema and the checkers. If the reply fails, it sends the reply back with the findings, up to two times.
 5. It writes a v1 response. Possible outcomes are `resolved`, `violated` (with `OUTPUT_SCHEMA_INVALID` or `OUTPUT_NONCONFORMANT` once retries run out) and `rejected` (with `MODEL_ERROR`). The record also logs the attempt count, whether the first reply passed, tokens, latency and cost.
 
@@ -124,6 +124,34 @@ Joel ran the notebook on a free Colab T4 over the 60 pilot cases. It covered 7 m
 **Cut, provisionally.** Qwen3 8B and 4B go forward on all three tasks. Qwen3 1.7B goes forward for T2, where it is within 5 points of the best, and is re-checked on T1 after the id fix. The sub-1B models are out, except that Qwen3 0.6B keeps a place as a fine-tuning candidate if fine-tuning is needed. It is the only floor-tier model that produced valid output, but it is more than 10 points behind. Phi-4-mini is held until the context fix is re-run. The Gemma 4, Ministral 3, Granite 4.1 and SmolLM3 tags still need checking, so they have not been screened.
 
 **Next run:** the same notebook from main once the fixes merge, with all three tasks for Qwen3 8B, 4B and 1.7B and Phi-4-mini. Keep the screen 1 run files for comparison.
+
+## Screen 2 results (2026-11-25)
+
+Joel re-ran the notebook after the screen 1 fixes, for the four models that went forward. It used prompts T1 1.1.0, T2 1.0.0 and T3 1.1.0, with Ollama's context raised to 8,192 tokens. Scores are on Joel's labels: 20 dev cases per task.
+
+| Model | T1 generation | T2 validation (precision / recall) | T3 Gherkin | p95 latency (T1 / T2 / T3) |
+| --- | --- | --- | --- | --- |
+| Qwen3 8B | **75%** | **90%** (100% / 88%) | 10% | 14 s / 7 s / 38 s |
+| Qwen3 4B | 65% | 85% (86% / 75%) | **95%** | 27 s / 7 s / 7 s |
+| Qwen3 1.7B | 40% | 80% (83% / 62%) | **95%** | 45 s / 2 s / 6 s |
+| Phi-4-mini 3.8B | 20% | 60% (60% / 38%) | 50% | 113 s / 112 s / 32 s |
+| Checker only (B0) | — | 75% (86% / 75%) | — | under 1 ms |
+
+**T2: Qwen3 8B meets all three T2 targets on the pilot.** It gets 90% success, 100% precision and 88% recall, against targets of 85%, 90% and 85%. It misses only P009 (system wording) and P012 (a necessary-condition classification). This is 20 dev cases, so the claim waits for the held-out split.
+
+**T3: building the feature from parts worked.** Qwen3 4B and 1.7B pass 19 of 20 cases. The only miss is P017, the ask case ("the app to be fast"), where they drafted anyway. Qwen3 8B wrote good scenarios but left `covered_criteria` empty in 18 of 20 cases, even after feedback. Mapping criteria to scenarios in a separate list was bookkeeping the model skipped. From prompt 1.2.0, each scenario lists the numbers of the criteria it tests, the prompt numbers the criteria, and the runner derives the coverage. The retry feedback now says exactly what to add.
+
+**T1: the asking gap is unchanged.** Qwen3 8B misses exactly the same five ask cases as in screen 1. From prompt 1.2.0, the generation prompt names the usual open decisions (an amount with no number, a period with no start, an unclear action, a non-binding modal). It also gives two invented worked examples, one draft and one ask. Neither example comes from any golden batch. Qwen3 1.7B rose from 5% to 40% with the RS id clean-up.
+
+**Faults found and fixed:**
+
+- **Proposals alongside a question:** the closed-vocabulary check rejected a term proposed alongside a clarifying question, because no statement used it. This cost Qwen3 1.7B the ask cases P012 and P013, and Qwen3 4B the case P012. A proposal that comes with questions and no statements is now allowed.
+- **Template ids as RS ids:** Qwen3 1.7B cited template ids such as "RS-T05 (rule): ..." as RS ids. The runner now replaces a template id with that template's own RS ids. Replaying the failed replies, one more case (T1-P005) would now pass.
+- **Timeouts:** Qwen3 4B and 1.7B timed out on 1 and 2 T1 cases. Phi-4-mini is still slow (p95 about 110 s) and still cuts JSON off about 3 KB in.
+
+**Cut.** Phi-4-mini is out, on quality and latency. Qwen3 4B is the lead for T3. Qwen3 8B leads T1 and T2. Qwen3 1.7B stays as the small option for T2 and T3.
+
+**Next run (screen 3):** prompts T1 1.2.0 and T3 1.2.0, for Qwen3 8B, 4B and 1.7B. Then run the same over batch 2 once it is labelled, which gives the first held-out numbers.
 
 ## LLM baseline
 

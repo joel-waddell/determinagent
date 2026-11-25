@@ -41,13 +41,12 @@ def oracle_reply(case):
     if case["task"] == "rulespeak_validation":
         return {"form": e["form"], "rationale": "per RS-04", "rs_refs": ["RS-04"], "questions": []}
     if e["behavior"] == "ask":
-        return {"feature_name": "", "scenarios": [], "covered_criteria": [], "questions": ask}
+        return {"feature_name": "", "scenarios": [], "questions": ask}
     n = len(case["input"]["requirement"].get("acceptance_criteria", []))
-    return dict(
-        feature_parts(e["reference_feature"]),
-        covered_criteria=[{"criterion": i, "scenarios": ["reference"]} for i in range(n)],
-        questions=[],
-    )
+    parts = feature_parts(e["reference_feature"])
+    for sc in parts["scenarios"]:
+        sc["criteria"] = list(range(n))
+    return dict(parts, questions=[])
 
 
 def feature_parts(text):
@@ -149,10 +148,15 @@ def test_unknown_rs_id_is_rejected():
 
 def test_gherkin_uncovered_criterion_triggers_retry():
     case = next(c for c in CASES if c["task"] == "gherkin_requirements" and c["expected"]["behavior"] == "draft")
-    partial = dict(oracle_reply(case), covered_criteria=[])
+    partial = oracle_reply(case)
+    for sc in partial["scenarios"]:
+        sc["criteria"] = [0, 99]
     fake = FakeAdapter([partial, oracle_reply(case)])
     rec = run_case(case, fake)
-    assert rec["attempts"] == 2 and "not covered" in fake.calls[1]["messages"][-1]["content"]
+    feedback = fake.calls[1]["messages"][-1]["content"]
+    assert rec["attempts"] == 2 and "[1] are not tested" in feedback and "[99] do not exist" in feedback
+    covered = rec["response"]["output"]["covered_criteria"]
+    assert [c["criterion"] for c in covered] == [0, 1] and covered[0]["scenarios"]
 
 
 def test_model_error_is_rejected():
@@ -300,10 +304,32 @@ def test_feature_is_written_from_its_parts():
             assert gherkin.check(text).conformant, text
             assert feature_parts(text) == feature_parts(c["expected"]["reference_feature"])
     assert render_feature({"feature_name": "", "scenarios": []}) == ""
+    p = prompts.render("gherkin_requirements", prepare(BY_ID["T3-P001"])[0])
+    assert "0: a reset link is emailed" in p.user and "1: the link expires" in p.user
 
 
 def test_rs_ids_copied_with_their_index_text_are_trimmed():
     case = BY_ID["T2-P001"]
     reply = dict(oracle_reply(case), rs_refs=["RS-04 form: obligation with must"])
+    rec = run_case(case, FakeAdapter([reply]), retries=0)
+    assert rec["response"]["status"] == "resolved"
+
+
+def test_template_ids_in_rs_refs_become_the_templates_rs_ids():
+    case = BY_ID["T2-P001"]
+    reply = dict(oracle_reply(case), rs_refs=["RS-T05 (rule): A loan must be considered ...", "RS-06"])
+    rec = run_case(case, FakeAdapter([reply]), retries=0)
+    assert rec["response"]["status"] == "resolved"
+
+
+def test_proposal_alongside_a_question_need_not_be_used():
+    case = BY_ID["T1-P012"]
+    reply = {
+        "statements": [],
+        "questions": [{"text": "What counts as a big order?", "alternatives": []}],
+        "vocabulary_proposals": [
+            {"term": "big order", "definition": "An order above a value to agree.", "rationale": ""}
+        ],
+    }
     rec = run_case(case, FakeAdapter([reply]), retries=0)
     assert rec["response"]["status"] == "resolved"
