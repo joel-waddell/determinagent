@@ -114,7 +114,7 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
     "gherkin_requirements": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["feature_name", "scenarios", "covered_criteria", "questions"],
+        "required": ["feature_name", "scenarios", "questions"],
         "properties": {
             "feature_name": {"type": "string", "description": "The feature's name, or an empty string when asking."},
             "scenarios": {
@@ -122,9 +122,14 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
                 "items": {
                     "type": "object",
                     "additionalProperties": False,
-                    "required": ["name", "steps", "examples"],
+                    "required": ["name", "criteria", "steps", "examples"],
                     "properties": {
                         "name": {"type": "string"},
+                        "criteria": {
+                            "type": "array",
+                            "items": {"type": "integer"},
+                            "description": "Numbers of the acceptance criteria this scenario tests, from 0.",
+                        },
                         "steps": {
                             "type": "array",
                             "items": {
@@ -148,15 +153,6 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
                             },
                         },
                     },
-                },
-            },
-            "covered_criteria": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "additionalProperties": False,
-                    "required": ["criterion", "scenarios"],
-                    "properties": {"criterion": {"type": "integer"}, "scenarios": _STR_LIST},
                 },
             },
             "questions": _QUESTIONS,
@@ -256,7 +252,9 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
             if not p["term"].strip() or not p["definition"].strip():
                 out.append("each vocabulary proposal needs a term and a one-line definition")
         texts = " ".join(st["text"].lower() for st in stmts)
-        for term in sorted(proposed - agreed):
+        # A proposal that comes with questions and no statements is part of
+        # agreeing the vocabulary, so it need not be used yet.
+        for term in sorted(proposed - agreed) if stmts else []:
             if not re.search(r"\b" + re.escape(term) + r"s?\b", texts):
                 out.append(f"the proposed term {term!r} is not used in any statement; drop it or use it")
         for i, st in enumerate(stmts, 1):
@@ -279,10 +277,16 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
                 why = "; ".join(f"{d.code} {d.message}" for d in res.defects if d.severity == "error")
                 out.append(f"the feature fails the Gherkin profile: {why}")
             n = len(pay["requirement"].get("acceptance_criteria", []))
-            covered = {c["criterion"] for c in reply["covered_criteria"] if c["scenarios"]}
+            covered = {c["criterion"] for c in _covered(reply, n)}
             missing = sorted(set(range(n)) - covered)
             if missing:
-                out.append(f"acceptance criteria {missing} are not covered by any scenario")
+                out.append(
+                    f"acceptance criteria {missing} are not tested by any scenario; add scenarios for them, "
+                    "and list in each scenario's criteria the numbers (from 0) of the criteria it tests"
+                )
+            bad = sorted({i for sc in reply["scenarios"] for i in sc["criteria"] if not 0 <= i < n})
+            if bad:
+                out.append(f"criteria numbers {bad} do not exist; the criteria are numbered 0 to {n - 1}")
     elif task == "js_generation":
         code, qs = reply["code"].strip(), reply["questions"]
         if not code and not qs:
@@ -351,14 +355,25 @@ def _output(task: str, reply: dict[str, Any], request: dict[str, Any], chk: rule
         if assumptions:
             js["assumptions"] = assumptions
         return js
+    n = len(request["payload"]["requirement"].get("acceptance_criteria", []))
     out: dict[str, Any] = {
-        "covered_criteria": [c for c in reply["covered_criteria"] if c["criterion"] >= 0],
+        "covered_criteria": _covered(reply, n),
         "questions": _questions(reply["questions"]),
     }
     feature = render_feature(reply)
     if feature:
         out["feature"] = feature
     return out
+
+
+def _covered(reply: dict[str, Any], n: int) -> list[dict[str, Any]]:
+    """Criterion-to-scenario coverage, from the criteria each scenario says it tests."""
+    by: dict[int, list[str]] = {}
+    for sc in reply.get("scenarios", []):
+        for i in sc["criteria"]:
+            if 0 <= i < n and _line(sc["name"]) not in by.setdefault(i, []):
+                by[i].append(_line(sc["name"]))
+    return [{"criterion": i, "scenarios": by[i]} for i in sorted(by)]
 
 
 def _line(text: str) -> str:
@@ -387,14 +402,29 @@ def render_feature(reply: dict[str, Any]) -> str:
 
 
 _RS_PREFIX = re.compile(r"^\s*(RS-\d{2})\b")
+_TEMPLATE_PREFIX = re.compile(r"^\s*(RS-T\d{2}b?)\b")
+
+
+def _tidy_ref(ref: Any) -> list[Any]:
+    """An rs_refs entry as RS ids: the id alone when a model copies an index line
+    ("RS-04 form: ..."), and a template's own RS ids when it cites a template ("RS-T05 ...")."""
+    if not isinstance(ref, str):
+        return [ref]
+    if m := _RS_PREFIX.match(ref):
+        return [m.group(1)]
+    if m := _TEMPLATE_PREFIX.match(ref):
+        t = next((t for t in rulespeak.default_profile().templates if t.id == m.group(1)), None)
+        if t is not None:
+            return list(t.rs_refs)
+    return [ref]
 
 
 def _tidy_refs(node: Any) -> None:
-    """Keep only the id when a model copies an index line ("RS-04 form: ...") into an rs_refs list."""
+    """Normalize every rs_refs list in a reply, in place, keeping order and dropping repeats."""
     if isinstance(node, dict):
         for k, v in node.items():
             if k == "rs_refs" and isinstance(v, list):
-                node[k] = [m.group(1) if isinstance(r, str) and (m := _RS_PREFIX.match(r)) else r for r in v]
+                node[k] = list(dict.fromkeys(x for r in v for x in _tidy_ref(r)))
             else:
                 _tidy_refs(v)
     elif isinstance(node, list):

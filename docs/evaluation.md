@@ -76,6 +76,10 @@ The model's job in T2 is to settle exactly these review findings, and recall is 
 
 Seven open models ran on a free Colab GPU. On T2, Qwen3 8B gets 85% success, 88% precision and 88% recall, against the checker's 75%, 86% and 75%. The T3 results were void because of a runner fault, which is now fixed. Full results are in [slm-strategy.md](slm-strategy.md#screen-1-results-2026-11-24).
 
+### Screen 2 (2026-11-25)
+
+On T2, Qwen3 8B gets 90% success, 100% precision and 88% recall, which meets all three T2 targets on the 20 pilot cases. On T3, Qwen3 4B and 1.7B pass 95% now that the runner writes the Gherkin. Details are in [slm-strategy.md](slm-strategy.md#screen-2-results-2026-11-25).
+
 ### Still to measure
 
 - **LLM baseline:** a general-purpose LLM on all three tasks, for the quality and cost comparison. It needs an API key and a cap.

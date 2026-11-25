@@ -104,6 +104,8 @@ def render(task: str, request: dict[str, Any], extra: dict[str, str] | None = No
         values["statement"] = pay["statements"][0]["text"]
     elif task == "gherkin_requirements":
         values["requirement"] = json.dumps(pay["requirement"], indent=2, ensure_ascii=False)
+        crit = pay["requirement"].get("acceptance_criteria", [])
+        values["criteria"] = "\n".join(f"{i}: {c}" for i, c in enumerate(crit)) or "(none given)"
     elif task == "js_generation":
         values.update(_js_facts(pay["spec"]))
         values["spec"] = json.dumps(pay["spec"], indent=2, ensure_ascii=False)
