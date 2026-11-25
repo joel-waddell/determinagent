@@ -333,3 +333,10 @@ def test_proposal_alongside_a_question_need_not_be_used():
     }
     rec = run_case(case, FakeAdapter([reply]), retries=0)
     assert rec["response"]["status"] == "resolved"
+
+
+def test_non_string_rs_refs_get_schema_feedback_not_a_crash():
+    case = BY_ID["T2-P001"]
+    bad = dict(oracle_reply(case), rs_refs=[{"id": "RS-04"}, ["RS-04"]])
+    rec = run_case(case, FakeAdapter([bad, oracle_reply(case)]))
+    assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2

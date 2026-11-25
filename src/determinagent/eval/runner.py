@@ -424,7 +424,11 @@ def _tidy_refs(node: Any) -> None:
     if isinstance(node, dict):
         for k, v in node.items():
             if k == "rs_refs" and isinstance(v, list):
-                node[k] = list(dict.fromkeys(x for r in v for x in _tidy_ref(r)))
+                # Only strings are cleaned and de-duplicated; anything else is
+                # kept for the schema check to reject with feedback.
+                tidy = [x for r in v for x in _tidy_ref(r)]
+                seen: set[str] = set()
+                node[k] = [x for x in tidy if not isinstance(x, str) or not (x in seen or seen.add(x))]
             else:
                 _tidy_refs(v)
     elif isinstance(node, list):
