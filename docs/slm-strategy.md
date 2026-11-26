@@ -153,6 +153,24 @@ Joel re-ran the notebook after the screen 1 fixes, for the four models that went
 
 **Next run (screen 3):** prompts T1 1.2.0 and T3 1.2.0, for Qwen3 8B, 4B and 1.7B. Then run the same over batch 2 once it is labelled, which gives the first held-out numbers.
 
+## Screen 3 results (2026-11-26)
+
+Joel ran screen 3 on Qwen3 8B, 4B and 1.7B with prompts T1 1.2.0, T2 1.0.0 and T3 1.2.0. The run files carry those versions, so this is a new run, not a copy of screen 2. Scores are on Joel's labels: 20 dev cases per task.
+
+| Model | T1 generation | T2 validation (precision / recall) | T3 Gherkin | p95 latency (T1 / T2 / T3) |
+| --- | --- | --- | --- | --- |
+| Qwen3 8B | **70%** | **90%** (100% / 88%) | **95%** | 10 s / 7 s / 18 s |
+| Qwen3 4B | 65% | 85% (86% / 75%) | 90% | 23 s / 8 s / 8 s |
+| Qwen3 1.7B | 40% | 80% (83% / 62%) | 95% | 45 s / 2 s / 5 s |
+
+**Against the Phase 0 targets (85% task success on each task), on the pilot:**
+
+- **T2 validation: met by Qwen3 8B**, with 90% success, 100% precision and 88% recall. Its two misses, P009 and P012, are the cases where a review finding should leave the form undetermined.
+- **T3 Gherkin: met.** Qwen3 8B passes 19 of 20 now that each scenario lists its criteria (screen 2: 2 of 20). Qwen3 1.7B also passes 19 of 20. Its miss is P014, with steps out of order, and Qwen3 4B and 1.7B miss the ask case P017.
+- **T1 generation: not met, at 70%.** Qwen3 8B drafts well: 14 of the 15 draft cases are right. The one miss is P020, where it wrote an exemption as a prohibition ("must not re-enter" instead of "need not re-enter"). It asks in none of the 5 ask cases. The asking guidance and examples in prompt 1.2.0 changed nothing. For example, it turns "Big orders need extra checks" into "A big order must undergo extra checks."
+
+**Next for T1 (prompt 1.3.0, screen 4):** the reply now has an `open_decisions` list, which comes before the statements, so the model has to name what is open before it drafts. If it lists any open decision, the runner rejects statements and asks for one question per decision. Prompting alone didn't work, so this makes asking a structural step. If it still fails, the options are a separate ask-or-draft call before drafting, or a larger model for T1 only.
+
 ## LLM baseline
 
 The quality and cost reference is a general-purpose Claude model, run once over the same cases with the same prompts and the same runner. I recommend Claude Sonnet 5.5 (`claude-sonnet-5-5`, $2 input and $10 output per million tokens). It is the balanced tier, so the 20% cost target is meaningful. The adapter uses the official `anthropic` SDK with structured outputs and caches the system prompt. It also uses the server-side refusal fallback, which Opus 5.5 and Sonnet 5.5 support.

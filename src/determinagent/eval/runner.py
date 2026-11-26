@@ -55,8 +55,13 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
     "rulespeak_generation": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["statements", "questions", "vocabulary_proposals"],
+        # open_decisions comes first, so the model weighs what is open before it drafts.
+        "required": ["open_decisions", "statements", "questions", "vocabulary_proposals"],
         "properties": {
+            "open_decisions": {
+                **_STR_LIST,
+                "description": "Business decisions the intent leaves open; empty when nothing is open.",
+            },
             "statements": {
                 "type": "array",
                 "items": {
@@ -244,6 +249,14 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
         stmts, qs = reply["statements"], reply["questions"]
         if not stmts and not qs:
             out.append("return at least one statement or one question")
+        open_ = [d for d in reply["open_decisions"] if d.strip()]
+        if open_ and stmts:
+            out.append(
+                "you listed open decisions, so do not draft: return no statements "
+                "and ask one question per open decision"
+            )
+        if open_ and not qs:
+            out.append("ask one question for each open decision you listed")
         proposed = _proposed(reply)
         agreed = {v.strip().lower() for v in vocab or ()}
         for term in sorted(proposed & agreed):
