@@ -8,7 +8,7 @@ import yaml
 from determinagent import contracts, prompts
 from determinagent.eval import score_run
 from determinagent.eval.__main__ import main
-from determinagent.eval.runner import REPLY_SCHEMAS, prepare, run, run_case
+from determinagent.eval.runner import AMBIGUITY, REPLY_SCHEMAS, prepare, run, run_case
 from determinagent.models import (
     AnthropicAdapter,
     FakeAdapter,
@@ -23,6 +23,11 @@ CASES = yaml.safe_load((ROOT / "golden" / "v1" / "pilot.yaml").read_text(encodin
 BY_ID = {c["id"]: c for c in CASES}
 
 
+def checklist(**open_):
+    """An ambiguity checklist with the given items open, quoting the given words."""
+    return {k: {"words": open_.get(k, ""), "open": k in open_} for k in AMBIGUITY}
+
+
 def oracle_reply(case):
     """A model reply that matches the golden expectation."""
     e = case["expected"]
@@ -30,14 +35,14 @@ def oracle_reply(case):
     if case["task"] == "rulespeak_generation":
         if e["behavior"] == "ask":
             return {
-                "open_decisions": ["which case is meant"],
+                "ambiguity": checklist(scope=case["input"]["intent"].split()[0]),
                 "statements": [],
                 "questions": ask,
                 "vocabulary_proposals": [],
             }
         trace = [{"claim": "obligation", "rs_refs": ["RS-04"], "application": "must states the requirement"}]
         return {
-            "open_decisions": [],
+            "ambiguity": checklist(),
             "statements": [{"text": s, "assumptions": [], "trace": trace} for s in e["reference_statements"]],
             "questions": [],
             "vocabulary_proposals": [
@@ -114,7 +119,7 @@ def test_generation_fields_come_from_the_checker():
 def test_retry_feeds_back_checker_findings_and_recovers():
     case = BY_ID["T1-P001"]
     bad = {
-        "open_decisions": [],
+        "ambiguity": checklist(),
         "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
         "questions": [],
         "vocabulary_proposals": [],
@@ -131,7 +136,7 @@ def test_retry_feeds_back_checker_findings_and_recovers():
 def test_retries_exhausted_is_violated_nonconformant():
     case = BY_ID["T1-P001"]
     bad = {
-        "open_decisions": [],
+        "ambiguity": checklist(),
         "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
         "questions": [],
         "vocabulary_proposals": [],
@@ -333,7 +338,7 @@ def test_template_ids_in_rs_refs_become_the_templates_rs_ids():
 def test_proposal_alongside_a_question_need_not_be_used():
     case = BY_ID["T1-P012"]
     reply = {
-        "open_decisions": ["what counts as a big order"],
+        "ambiguity": checklist(amount="Big"),
         "statements": [],
         "questions": [{"text": "What counts as a big order?", "alternatives": []}],
         "vocabulary_proposals": [
@@ -351,10 +356,10 @@ def test_non_string_rs_refs_get_schema_feedback_not_a_crash():
     assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
 
 
-def test_open_decisions_mean_ask_not_draft():
+def test_an_open_checklist_item_means_ask_not_draft():
     case = BY_ID["T1-P012"]
     drafted = {
-        "open_decisions": ["what counts as a big order", "which checks"],
+        "ambiguity": checklist(amount="Big", scope="extra checks"),
         "statements": [{"text": "Each order must have a customer.", "assumptions": [], "trace": []}],
         "questions": [],
         "vocabulary_proposals": [],
@@ -362,5 +367,37 @@ def test_open_decisions_mean_ask_not_draft():
     fake = FakeAdapter([drafted, oracle_reply(case)])
     rec = run_case(case, fake)
     feedback = fake.calls[1]["messages"][-1]["content"]
-    assert "do not draft" in feedback and "ask one question" in feedback
+    assert "amount, scope as open" in feedback and "do not draft" in feedback
+    assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
+    assert rec["ambiguity"] == {"scope": "Big"}
+
+
+def test_an_open_item_must_quote_the_intent():
+    case = BY_ID["T1-P012"]
+    asked = {
+        "ambiguity": checklist(amount="what is an order"),
+        "statements": [],
+        "questions": [{"text": "What is an order?", "alternatives": []}],
+        "vocabulary_proposals": [],
+    }
+    empty = dict(asked, ambiguity=checklist(amount=""))
+    empty["ambiguity"]["amount"]["open"] = True
+    fake = FakeAdapter([asked, empty, oracle_reply(case)])
+    rec = run_case(case, fake)
+    assert "is not in the intent" in fake.calls[1]["messages"][-1]["content"]
+    assert "quote the words" in fake.calls[2]["messages"][-1]["content"]
+    assert rec["attempts"] == 3
+
+
+def test_nothing_open_means_draft_not_ask():
+    case = BY_ID["T1-P001"]
+    asked = {
+        "ambiguity": checklist(),
+        "statements": [],
+        "questions": [{"text": "What is an item?", "alternatives": []}],
+        "vocabulary_proposals": [],
+    }
+    fake = FakeAdapter([asked, oracle_reply(case)])
+    rec = run_case(case, fake)
+    assert "draft the statements instead of asking" in fake.calls[1]["messages"][-1]["content"]
     assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2

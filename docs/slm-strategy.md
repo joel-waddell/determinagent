@@ -171,6 +171,28 @@ Joel ran screen 3 on Qwen3 8B, 4B and 1.7B with prompts T1 1.2.0, T2 1.0.0 and T
 
 **Next for T1 (prompt 1.3.0, screen 4):** the reply now has an `open_decisions` list, which comes before the statements, so the model has to name what is open before it drafts. If it lists any open decision, the runner rejects statements and asks for one question per decision. Prompting alone didn't work, so this makes asking a structural step. If it still fails, the options are a separate ask-or-draft call before drafting, or a larger model for T1 only.
 
+## Screen 4 results (2026-11-26)
+
+Joel ran T1 only, on Qwen3 8B and 4B, with prompt 1.3.0 (the `open_decisions` step). The run files carry v1/1.3.0. Scores are on Joel's labels: 20 dev cases.
+
+| Model | T1 generation | Draft cases right (of 15) | Ask cases right (of 5) | p95 latency |
+| --- | --- | --- | --- | --- |
+| Qwen3 8B | 55% (69% of the 16 it answered) | 10 | 1 | 45 s (timeouts) |
+| Qwen3 4B | 30% | 1 | 5 | 7 s |
+
+- **Qwen3 8B:** its first 4 cases (P001–P004) timed out, almost certainly while the model was still loading, so they say nothing about quality. On the other 16 it is where it was in screen 3. It asked only on P012 ("Big orders need extra checks") and still drafted P006, P013, P015 and P017. P020 is still an exemption written as a prohibition.
+- **Qwen3 4B** swung the other way: it asked on 19 of 20 cases, with filler questions about agreed vocabulary terms ("What is the definition of 'item'?").
+
+**Reading.** A free-text list of open decisions does not calibrate either model: 8B lists none, and 4B lists something every time. The ask decision needs to be narrower and checkable.
+
+**Next for T1 (prompt 1.4.0, screen 5):** `open_decisions` is replaced by a fixed ambiguity checklist with five items: binding (should), amount, period, either_or and scope. For each item the model quotes the intent's words and says open or not. The runner, not the model, then decides:
+
+- an open item must quote words that are really in the intent;
+- any open item means no statements and at least one question;
+- no open item means draft, not ask.
+
+Record files keep which items were open (`ambiguity`), for diagnosis. The prompt's examples avoid every phrase in the pilot and batch 2, so batch 2 stays a fair held-out test. The notebook now loads each model before timing it, and adds Qwen3 14B (about 9 GB, so it fits the T4) as the bigger-model check. Screen 5 is T1 only, on Qwen3 8B and 14B. If the checklist still fails on 8B but 14B passes, T1 goes to the larger model and T2 and T3 stay on 8B.
+
 ## LLM baseline
 
 The quality and cost reference is a general-purpose Claude model, run once over the same cases with the same prompts and the same runner. I recommend Claude Sonnet 5.5 (`claude-sonnet-5-5`, $2 input and $10 output per million tokens). It is the balanced tier, so the 20% cost target is meaningful. The adapter uses the official `anthropic` SDK with structured outputs and caches the system prompt. It also uses the server-side refusal fallback, which Opus 5.5 and Sonnet 5.5 support.

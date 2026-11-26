@@ -48,6 +48,20 @@ _QUESTIONS = {
     },
 }
 
+# The fixed ambiguity checklist for generation (prompt 1.4.0). The model
+# answers each item with the intent's own words and open true or false; the
+# runner, not the model, decides ask or draft: any open item means ask.
+AMBIGUITY: dict[str, str] = {
+    "binding": "A word such as should, ought or is expected to leaves it unclear whether this is required "
+    "or only advised.",
+    "amount": "A size, amount, speed or importance has no number: heavy, soon, many, significant.",
+    "period": "A period or count has no fixed start or window: this quarter (calendar or rolling?), every 6 "
+    "months (from when?), 3 times (over what window?).",
+    "either_or": "Either ... or, or a plain or, could mean exactly one or at least one.",
+    "scope": "What happens, to what, for how long, or what an exception covers is not stated: restrict, "
+    "review, unless approved.",
+}
+
 # What the model is asked to return. Smaller than the v1 output contract:
 # fields a checker can fill are left out, and every field is required so
 # strict constrained decoding accepts the schema.
@@ -55,12 +69,23 @@ REPLY_SCHEMAS: dict[str, dict[str, Any]] = {
     "rulespeak_generation": {
         "type": "object",
         "additionalProperties": False,
-        # open_decisions comes first, so the model weighs what is open before it drafts.
-        "required": ["open_decisions", "statements", "questions", "vocabulary_proposals"],
+        # The checklist comes first, so the model weighs what is open before it drafts.
+        "required": ["ambiguity", "statements", "questions", "vocabulary_proposals"],
         "properties": {
-            "open_decisions": {
-                **_STR_LIST,
-                "description": "Business decisions the intent leaves open; empty when nothing is open.",
+            "ambiguity": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": list(AMBIGUITY),
+                "properties": {
+                    k: {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["words", "open"],
+                        "properties": {"words": {"type": "string"}, "open": {"type": "boolean"}},
+                        "description": d,
+                    }
+                    for k, d in AMBIGUITY.items()
+                },
             },
             "statements": {
                 "type": "array",
@@ -249,14 +274,23 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
         stmts, qs = reply["statements"], reply["questions"]
         if not stmts and not qs:
             out.append("return at least one statement or one question")
-        open_ = [d for d in reply["open_decisions"] if d.strip()]
+        open_ = _open_items(reply)
+        intent = _norm(pay["intent"].get("free_text") or json.dumps(pay["intent"]))
+        for k in open_:
+            words = reply["ambiguity"][k]["words"].strip()
+            if not words:
+                out.append(f"ambiguity item {k!r} is open, so quote the words of the intent that make it open")
+            elif _norm(words) not in intent:
+                out.append(f"ambiguity item {k!r}: {words!r} is not in the intent; quote the intent's own words")
         if open_ and stmts:
             out.append(
-                "you listed open decisions, so do not draft: return no statements "
-                "and ask one question per open decision"
+                f"you marked {', '.join(open_)} as open, so do not draft: return no statements and ask one "
+                "question per open item, or set open to false if the intent does settle it"
             )
         if open_ and not qs:
-            out.append("ask one question for each open decision you listed")
+            out.append("ask one question for each open ambiguity item")
+        if not open_ and not stmts:
+            out.append("no ambiguity item is open, so draft the statements instead of asking")
         proposed = _proposed(reply)
         agreed = {v.strip().lower() for v in vocab or ()}
         for term in sorted(proposed & agreed):
@@ -309,6 +343,14 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
         elif code:
             out += _js_problems(_visible_report(reply["code"], pay["spec"]))
     return out
+
+
+def _norm(text: str) -> str:
+    return " ".join(text.replace("\u2019", "'").casefold().split())
+
+
+def _open_items(reply: dict[str, Any]) -> list[str]:
+    return [k for k in AMBIGUITY if reply.get("ambiguity", {}).get(k, {}).get("open")]
 
 
 def _proposed(reply: dict[str, Any]) -> set[str]:
@@ -530,6 +572,9 @@ def run_case(case: dict[str, Any], adapter: Adapter, *, retries: int = 2) -> dic
         reply, problems, code = _parse(task, c.text, request)
         if not problems:
             record["first_pass_wellformed"] = attempt == 0
+            if task == "rulespeak_generation":
+                # Kept for diagnosis: which checklist items the model marked open.
+                record["ambiguity"] = {k: reply["ambiguity"][k]["words"] for k in _open_items(reply)}
             resp = _response(case, "resolved", _output(task, reply, request, chk))
             errs = contracts.validate("response", resp)
             if errs:

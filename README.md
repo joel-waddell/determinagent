@@ -11,7 +11,7 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.1 Domain specification | RuleSpeak profile v0.2.0 after expert review |
 | 0 Foundations | 0.2 Golden evaluation set | Design set; pilot of 60 labelled; batch 2 of 120 drafted, awaiting labels ([docs](docs/golden-set.md)) |
 | 0 Foundations | 0.3 Baselines and targets | Harness and gate built; model-free checker baseline measured ([docs](docs/evaluation.md)); model baselines need model access |
-| 0 Foundations | 0.4 SLM strategy | Screens 1 to 3 on free Colab: Qwen3 8B meets the targets on the pilot for T2 (90%) and T3 (95%); T1 is 70% because it never asks ([docs](docs/slm-strategy.md)) |
+| 0 Foundations | 0.4 SLM strategy | Screens 1 to 4 on free Colab: Qwen3 8B meets the targets on the pilot for T2 (90%) and T3 (95%); T1 is still short because the ask-or-draft call is uncalibrated, so T1 now uses a fixed ambiguity checklist (screen 5 next) ([docs](docs/slm-strategy.md)) |
 | 0 Foundations | 0.5 Fine-tuning readiness | Draft verdict per resource; final once the 0.4 screen is in ([docs](docs/finetune-readiness.md)) |
 | 0 Foundations | 0.6 Intake UX design sprint | Users mapped, three concepts, two clickable mock-ups; user testing needs Joel ([docs](docs/intake-ux.md)) |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate, including the JavaScript J1–J3 contracts; freezes after 0.6 ([docs](docs/contracts.md)) |
