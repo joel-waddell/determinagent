@@ -12,7 +12,7 @@ A run is a JSON Lines file with one record per golden case:
  "first_pass_wellformed": true, "system": "qwen-2.5-3b-prompt-v1"}
 ```
 
-`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure. Model runs from `eval run` also record `prompt_version`, `input_tokens`, `output_tokens` and, when retries ran out, the last `problems` and the model's `last_reply` (up to 4,000 characters) ([slm-strategy.md](slm-strategy.md#how-a-run-works)).
+`response` must validate against the v1 response contract. A record that doesn't, or a case with no record, is scored as a failure. Model runs from `eval run` also record `prompt_version`, `input_tokens`, `output_tokens` and, when retries ran out, the last `problems` and the model's `last_reply` (up to 4,000 characters). Generation records also keep `ambiguity`: the checklist items the model marked open, with the words it quoted ([slm-strategy.md](slm-strategy.md#how-a-run-works)).
 
 ## How a case is scored
 
