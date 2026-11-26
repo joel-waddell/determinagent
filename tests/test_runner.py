@@ -29,9 +29,15 @@ def oracle_reply(case):
     ask = [{"text": "Which case is meant?", "alternatives": []}]
     if case["task"] == "rulespeak_generation":
         if e["behavior"] == "ask":
-            return {"statements": [], "questions": ask, "vocabulary_proposals": []}
+            return {
+                "open_decisions": ["which case is meant"],
+                "statements": [],
+                "questions": ask,
+                "vocabulary_proposals": [],
+            }
         trace = [{"claim": "obligation", "rs_refs": ["RS-04"], "application": "must states the requirement"}]
         return {
+            "open_decisions": [],
             "statements": [{"text": s, "assumptions": [], "trace": trace} for s in e["reference_statements"]],
             "questions": [],
             "vocabulary_proposals": [
@@ -108,6 +114,7 @@ def test_generation_fields_come_from_the_checker():
 def test_retry_feeds_back_checker_findings_and_recovers():
     case = BY_ID["T1-P001"]
     bad = {
+        "open_decisions": [],
         "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
         "questions": [],
         "vocabulary_proposals": [],
@@ -124,6 +131,7 @@ def test_retry_feeds_back_checker_findings_and_recovers():
 def test_retries_exhausted_is_violated_nonconformant():
     case = BY_ID["T1-P001"]
     bad = {
+        "open_decisions": [],
         "statements": [{"text": "Orders need items", "assumptions": [], "trace": []}],
         "questions": [],
         "vocabulary_proposals": [],
@@ -325,6 +333,7 @@ def test_template_ids_in_rs_refs_become_the_templates_rs_ids():
 def test_proposal_alongside_a_question_need_not_be_used():
     case = BY_ID["T1-P012"]
     reply = {
+        "open_decisions": ["what counts as a big order"],
         "statements": [],
         "questions": [{"text": "What counts as a big order?", "alternatives": []}],
         "vocabulary_proposals": [
@@ -339,4 +348,19 @@ def test_non_string_rs_refs_get_schema_feedback_not_a_crash():
     case = BY_ID["T2-P001"]
     bad = dict(oracle_reply(case), rs_refs=[{"id": "RS-04"}, ["RS-04"]])
     rec = run_case(case, FakeAdapter([bad, oracle_reply(case)]))
+    assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
+
+
+def test_open_decisions_mean_ask_not_draft():
+    case = BY_ID["T1-P012"]
+    drafted = {
+        "open_decisions": ["what counts as a big order", "which checks"],
+        "statements": [{"text": "Each order must have a customer.", "assumptions": [], "trace": []}],
+        "questions": [],
+        "vocabulary_proposals": [],
+    }
+    fake = FakeAdapter([drafted, oracle_reply(case)])
+    rec = run_case(case, fake)
+    feedback = fake.calls[1]["messages"][-1]["content"]
+    assert "do not draft" in feedback and "ask one question" in feedback
     assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
