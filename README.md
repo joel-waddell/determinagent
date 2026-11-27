@@ -16,7 +16,7 @@ The full plan is in [docs/program-of-work.md](docs/program-of-work.md): five pha
 | 0 Foundations | 0.6 Intake UX design sprint | Users mapped, three concepts, two clickable mock-ups; user testing needs Joel ([docs](docs/intake-ux.md)) |
 | 0 Foundations | 0.7 Contracts | v1.0 release candidate, including the JavaScript J1–J3 contracts; freezes after 0.6 ([docs](docs/contracts.md)) |
 | 0 Foundations | 0.1 Domain specification (JavaScript, tranche 1) | JS profile v0.1.0: ESLint rule set, defect taxonomy and checker ([docs](docs/domain/javascript.md)) |
-| 0 Foundations | 0.2 to 0.4 JavaScript J2 (tranche 1) | Pilot of 20 J2 cases with hidden tests, mutation-checked, awaiting labels; scorer, runner and prompt hooks built ([docs](docs/golden-set.md#j2-javascript-generation-amendment-1)) |
+| 0 Foundations | 0.2 to 0.4 JavaScript J2 (tranche 1) | Pilot of 20 J2 cases labelled; 12 corrected or clarified cases awaiting a re-check; scorer, runner and prompt hooks built ([docs](docs/golden-set.md#j2-javascript-generation-amendment-1)) |
 | 0 Foundations | 0.8 Execution sandbox (JavaScript, tranche 1) | Built: isolated runner, limits, fixed clock and seed, escape suite ([docs](docs/sandbox.md)) |
 | 1 to 4 | | Not started |
 

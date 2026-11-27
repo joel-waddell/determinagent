@@ -168,7 +168,10 @@ function prelude(cfgJson) {
     }
     const o = {}
     const ks = objectKeys(v)
-    for (let i = 0; i < ks.length; i++) o[ks[i]] = decode(v[ks[i]])
+    // defineProperty, so a key such as __proto__ becomes an own property.
+    for (let i = 0; i < ks.length; i++) {
+      defineProperty(o, ks[i], { value: decode(v[ks[i]]), writable: true, enumerable: true, configurable: true })
+    }
     return o
   }
 

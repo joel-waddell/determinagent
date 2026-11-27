@@ -121,8 +121,8 @@ def info() -> dict[str, Any]:
     return _call({"info": True})
 
 
-def mutants(code: str, *, max_mutants: int = 80) -> list[dict[str, Any]]:
-    """Single-token mutants of ``code``: [{id, line, column, from, to, code}]."""
+def mutants(code: str, *, max_mutants: int = 120) -> list[dict[str, Any]]:
+    """Single-token and structural mutants of ``code``: [{id, line, column, from, to, code}]."""
     return _call({"mutants": code, "max": max_mutants})
 
 

@@ -178,7 +178,7 @@ def test_workbook_round_trip_j2(tmp_path):
     wb.save(xlsx)
 
     counts = wb_mod.import_labels(batch, xlsx, "tester")
-    assert counts == {"labelled": 1, "revise": 1, "dropped": 1, "unlabelled": 17}
+    assert counts == {"labelled": 1, "revise": 1, "dropped": 1, "unlabelled": 24}
     before = {c["id"]: c for c in load(ROOT / "golden" / "v1" / "j2-pilot.yaml")}
     cases = {c["id"]: c for c in load(batch)}
     assert cases["J2-P001"]["label"]["status"] == "labelled"
@@ -194,3 +194,17 @@ def test_workbook_round_trip_j2(tmp_path):
         assert cases[cid]["expected"] == before[cid]["expected"]
         assert cases[cid]["input"] == before[cid]["input"]
     assert "reference_solution: |" in batch.read_text(encoding="utf-8")
+
+
+def test_recheck_workbook_holds_only_draft_cases(tmp_path):
+    from openpyxl import load_workbook
+
+    spec = importlib.util.spec_from_file_location("wb", ROOT / "tools" / "golden" / "workbook.py")
+    wb_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(wb_mod)
+    batch = ROOT / "golden" / "v1" / "j2-pilot.yaml"
+    xlsx = tmp_path / "recheck.xlsx"
+    assert wb_mod.main(["build", str(batch), str(xlsx), "--status", "draft"]) == 0
+    ids = [r[0] for r in load_workbook(xlsx)["J2 JavaScript"].iter_rows(min_row=2, values_only=True) if r[0]]
+    want = [c["id"] for c in load(batch) if c["label"]["status"] == "draft"]
+    assert ids == want and len(ids) == 12
