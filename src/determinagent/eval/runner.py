@@ -62,6 +62,10 @@ AMBIGUITY: dict[str, str] = {
     "review, unless approved.",
 }
 
+# The only words that leave it open whether guidance binds. Must, need,
+# can't, only, may and need not are settled (screen 5: Qwen3 8B flagged them).
+_SOFT = re.compile(r"\b(should|ought|expected to|supposed to)\b", re.IGNORECASE)
+
 # What the model is asked to return. Smaller than the v1 output contract:
 # fields a checker can fill are left out, and every field is required so
 # strict constrained decoding accepts the schema.
@@ -282,6 +286,10 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
                 out.append(f"ambiguity item {k!r} is open, so quote the words of the intent that make it open")
             elif _norm(words) not in intent:
                 out.append(f"ambiguity item {k!r}: {words!r} is not in the intent; quote the intent's own words")
+            elif k == "binding" and not _SOFT.search(words):
+                out.append(
+                    f"binding: {words!r} is not should, ought or expected to, so it is clear; set binding open to false"
+                )
         if open_ and stmts:
             out.append(
                 f"you marked {', '.join(open_)} as open, so do not draft: return no statements and ask one "

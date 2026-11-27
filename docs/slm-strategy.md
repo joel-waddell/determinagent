@@ -193,6 +193,36 @@ Joel ran T1 only, on Qwen3 8B and 4B, with prompt 1.3.0 (the `open_decisions` st
 
 Record files keep which items were open (`ambiguity`), for diagnosis. The prompt's examples avoid every phrase in the pilot and batch 2, so batch 2 stays a fair held-out test. The notebook now loads each model before timing it, and adds Qwen3 14B (about 9 GB, so it fits the T4) as the bigger-model check. Screen 5 is T1 only, on Qwen3 8B and 14B. If the checklist still fails on 8B but 14B passes, T1 goes to the larger model and T2 and T3 stay on 8B.
 
+## Screen 5 results (2026-11-27)
+
+Joel ran T1 only, on Qwen3 8B and 14B, with prompt 1.4.0 (the ambiguity checklist) and the model warm-up. The run files carry v1/1.4.0, and no case timed out. Scores are on Joel's labels: 20 dev cases.
+
+| Model | T1 generation | Draft cases right (of 15) | Ask cases right (of 5) | First pass | p95 latency |
+| --- | --- | --- | --- | --- | --- |
+| Qwen3 14B | **85%** | 15 | 2 | 100% | 24 s |
+| Qwen3 8B | 65% | 10 | 3 | 90% | 23 s |
+
+- **Qwen3 14B meets the T1 target on the pilot.** Every draft is right, including P020, the exemption that all earlier runs wrote as a prohibition. It asks on P012 (amount, "big") and P015 (binding, "should"). It still drafts three ask cases:
+  - P006, "this year": calendar year or rolling year;
+  - P013, "every 90 days": counted from when;
+  - P017, "either ... or": one only, or at least one.
+
+  On all three it marked the period or either_or item closed.
+- **Qwen3 8B now asks:** it asks on P012, P015 and P017, against at most 1 of 5 before. But it marks binding open on words that are already settled:
+  - P002, "can't";
+  - P004, "don't have to";
+  - P011, "are welcome";
+  - P019 (the injection case), "write a rule";
+  - P020, "don't need to".
+
+  That cost it those 5 drafts.
+
+**Decision.** T1 goes to Qwen3 14B, and T2 and T3 stay on Qwen3 8B, subject to batch 2 held-out results. Both fit the free T4, one at a time.
+
+**Runner guard (after screen 5).** The binding item can only be open when the quoted words are should, ought, expected to or supposed to; otherwise the runner sends it back to be set closed. This targets 8B's five false asks. Whether 8B then drafts those cases correctly needs a run, so screen 5's numbers stay as measured.
+
+**Next.** Run T1 on batch 2 with Qwen3 14B (and 8B, for comparison) once Joel's batch 2 labels are in, for the first held-out numbers. The remaining 14B misses, period and either_or, are the items to watch there: batch 2 has "every year" (an ask case) and several stated windows (draft cases).
+
 ## LLM baseline
 
 The quality and cost reference is a general-purpose Claude model, run once over the same cases with the same prompts and the same runner. I recommend Claude Sonnet 5.5 (`claude-sonnet-5-5`, $2 input and $10 output per million tokens). It is the balanced tier, so the 20% cost target is meaningful. The adapter uses the official `anthropic` SDK with structured outputs and caches the system prompt. It also uses the server-side refusal fallback, which Opus 5.5 and Sonnet 5.5 support.

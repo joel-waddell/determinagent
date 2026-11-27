@@ -401,3 +401,24 @@ def test_nothing_open_means_draft_not_ask():
     rec = run_case(case, fake)
     assert "draft the statements instead of asking" in fake.calls[1]["messages"][-1]["content"]
     assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
+
+
+def test_binding_is_open_only_for_soft_words():
+    case = BY_ID["T1-P004"]
+    asked = {
+        "ambiguity": checklist(binding="don't have to pay"),
+        "statements": [],
+        "questions": [{"text": "Is paying the fee required, or allowed?", "alternatives": []}],
+        "vocabulary_proposals": [],
+    }
+    fake = FakeAdapter([asked, oracle_reply(case)])
+    rec = run_case(case, fake)
+    assert "set binding open to false" in fake.calls[1]["messages"][-1]["content"]
+    assert rec["response"]["status"] == "resolved" and rec["attempts"] == 2
+
+
+def test_should_keeps_binding_open():
+    case = BY_ID["T1-P015"]
+    reply = dict(oracle_reply(case), ambiguity=checklist(binding="should"))
+    rec = run_case(case, FakeAdapter([reply]), retries=0)
+    assert rec["response"]["status"] == "resolved" and rec["ambiguity"] == {"binding": "should"}
