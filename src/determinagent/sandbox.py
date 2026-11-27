@@ -126,6 +126,11 @@ def mutants(code: str, *, max_mutants: int = 120) -> list[dict[str, Any]]:
     return _call({"mutants": code, "max": max_mutants})
 
 
+def without_comments(code: str) -> str:
+    """``code`` with its comments blanked out, so a source check sees only what can run."""
+    return _call({"without_comments": code})
+
+
 def lint_errors(report: dict[str, Any]) -> list[dict[str, Any]]:
     return [f for f in report["lint"] if f["severity"] == "error"]
 

@@ -207,4 +207,4 @@ def test_recheck_workbook_holds_only_draft_cases(tmp_path):
     assert wb_mod.main(["build", str(batch), str(xlsx), "--status", "draft"]) == 0
     ids = [r[0] for r in load_workbook(xlsx)["J2 JavaScript"].iter_rows(min_row=2, values_only=True) if r[0]]
     want = [c["id"] for c in load(batch) if c["label"]["status"] == "draft"]
-    assert ids == want and len(ids) == 12
+    assert ids == want and ids == ["J2-P020"]

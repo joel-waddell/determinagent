@@ -8,6 +8,7 @@
 //   [job, job, ...]                                                -> an array of reports, in order
 //   {"info": true}                                                 -> how this machine isolates code
 //   {"mutants": code, "max": 120}                                  -> mutants of code
+//   {"without_comments": code}                                     -> code with comments blanked
 //
 // Jobs in a batch run up to --concurrency at a time (default 4). Exit code 0
 // on success, 2 on bad input.
@@ -17,7 +18,7 @@ import { parseArgs } from 'node:util'
 
 import { defaultProfile } from '../src/conformance/javascript.js'
 import { execute, isolation } from '../src/sandbox/index.js'
-import { mutants } from '../src/sandbox/mutate.js'
+import { mutants, withoutComments } from '../src/sandbox/mutate.js'
 
 export async function runJobs(jobs, concurrency = 4) {
   const out = new Array(jobs.length)
@@ -47,6 +48,8 @@ export async function main(argv = process.argv.slice(2), { stdin = () => readFil
     result = { ...isolation(), profile_version: defaultProfile().version }
   } else if (input && typeof input.mutants === 'string') {
     result = mutants(input.mutants, { max: input.max ?? 120 })
+  } else if (input && typeof input.without_comments === 'string') {
+    result = withoutComments(input.without_comments)
   } else if (Array.isArray(input)) {
     result = await runJobs(input, Number(opts.concurrency) || 4)
   } else if (input && typeof input.code === 'string') {
