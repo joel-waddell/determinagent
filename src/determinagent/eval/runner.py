@@ -286,7 +286,7 @@ def _problems(task: str, reply: dict[str, Any], request: dict[str, Any]) -> list
                 out.append(f"ambiguity item {k!r} is open, so quote the words of the intent that make it open")
             elif _norm(words) not in intent:
                 out.append(f"ambiguity item {k!r}: {words!r} is not in the intent; quote the intent's own words")
-            elif k == "binding" and not _SOFT.search(words):
+            elif k == "binding" and not _SOFT.search(_norm(words)):
                 out.append(
                     f"binding: {words!r} is not should, ought or expected to, so it is clear; set binding open to false"
                 )
