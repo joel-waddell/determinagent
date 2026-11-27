@@ -239,7 +239,12 @@ cases:
         const sorted = [...values].sort((a, b) => a - b)
         const mid = Math.floor(sorted.length / 2)
         if (sorted.length % 2 === 1) return sorted[mid]
-        return sorted[mid - 1] / 2 + sorted[mid] / 2
+        const lo = sorted[mid - 1]
+        const hi = sorted[mid]
+        const sum = lo + hi
+        // Halve the sum when it is finite, so subnormals keep their precision;
+        // only when it overflows halve each value first.
+        return Number.isFinite(sum) ? sum / 2 : lo / 2 + hi / 2
       }
     hidden_tests:
     - {name: single value, args: [[7]], returns: 7}
@@ -260,12 +265,17 @@ cases:
       code: |
         assert.equal(fn([-Number.MAX_VALUE, Number.MAX_VALUE]), 0)
         assert.equal(fn([-Number.MAX_VALUE, -Number.MAX_VALUE, 1]), -Number.MAX_VALUE)
+    - name: no underflow at the smallest value
+      code: |
+        assert.equal(fn([Number.MIN_VALUE, Number.MIN_VALUE]), Number.MIN_VALUE)
+        assert.equal(fn([3 * Number.MIN_VALUE, 3 * Number.MIN_VALUE]), 3 * Number.MIN_VALUE)
+        assert.equal(fn([Number.MIN_VALUE, 3 * Number.MIN_VALUE]), 2 * Number.MIN_VALUE)
     - {name: NaN, args: [[1, {$js: NaN}]], throws: TypeError}
     - {name: infinity, args: [[1, {$js: Infinity}]], throws: TypeError}
     - {name: a string, args: [[1, '2']], throws: TypeError}
-    mutation: {"mutants": 21, "killed": 21, "equivalent": 0, "score": 1.0, "survivors": []}
-  draft_note: 'Corrected per Joel''s review: Domain is finite numbers (TypeError otherwise); the even-count mean is lo/2 + hi/2; overflow
-      and extreme tests added.'
+    mutation: {"mutants": 25, "killed": 25, "equivalent": 0, "score": 1.0, "survivors": []}
+  draft_note: 'Corrected per Joel''s review: Domain is finite numbers (TypeError otherwise); the even-count mean halves the sum, or each value
+      when the sum overflows; overflow, underflow and extreme tests added.'
   label:
     status: draft
     labelled_by: null
@@ -278,7 +288,7 @@ cases:
       requested_changes: Define the supported numeric domain explicitly, including NaN and infinities. For finite values,
         use an overflow-safe even-count mean. Add [Number.MAX_VALUE, Number.MAX_VALUE] -> Number.MAX_VALUE and opposite-sign
         extremes.
-      applied: Domain is finite numbers (TypeError otherwise); the even-count mean is lo/2 + hi/2; overflow and extreme tests
+      applied: Domain is finite numbers (TypeError otherwise); the even-count mean halves the sum, or each value when the sum overflows; overflow, underflow and extreme tests
         added.
 - id: J2-P006
   task: js_generation
