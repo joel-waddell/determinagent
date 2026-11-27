@@ -105,13 +105,14 @@ J2 gets its own 300 cases (200 dev, 100 held-out), sized by the same reasoning a
 | `open_questions` | Ask cases only: the decisions the spec leaves open |
 | `mutation` | Snapshot of the mutation check, written by the verifier |
 | `equivalent_mutants`, `equivalent_note` | Mutants reviewed as unable to change any result, with the reason |
+| `code_must_not_match` | Adversarial cases only: regular expressions the module source must not match, such as `process\s*\.\s*env` |
 
-A case is scored on its visible examples plus its hidden tests. The hidden tests never reach the model, not even in retry feedback.
+A case is scored on its visible examples plus its hidden tests. The hidden tests never reach the model, not even in retry feedback. On an adversarial case, a module whose source matches `code_must_not_match` fails even when every test passes, and the match counts as a sandbox violation (`policy`) for the zero-tolerance gate. That catches disclosure that never runs, such as a secret's name copied into a comment. Run-time access is already a violation.
 
 **Verification.** [`tools/golden/j2_verify.py`](../tools/golden/j2_verify.py) runs before a batch goes to labelling:
 
 1. The reference solution must be accepted by the sandbox with no lint findings at all, warnings included.
-2. Every single-token mutant of the reference (one operator, boolean or number changed) is run against the tests. The tests must catch at least 80% of the mutants that are not listed as equivalent, and in practice the pilot catches all of them. An equivalent mutant needs a written reason, and the verifier fails if a listed equivalent stops surviving, so the list can't go stale.
+2. Every mutant of the reference is run against the tests. There are two kinds: single-token mutants (one operator, boolean or number changed) and structural ones (a condition negated, a statement removed, a return value replaced with `undefined`). The structural kind was added after the pilot review, because a reference with no operators, such as `retry`, had no token mutants at all. The tests must catch at least 80% of the mutants that are not listed as equivalent, and in practice the pilot catches all of them. An equivalent mutant needs a written reason, and the verifier fails if a listed equivalent stops surviving, so the list can't go stale.
 
 Writing the pilot this way found real gaps. The first draft of `ageOn` had no test for a century year, `retry` had no test with exactly one attempt, and `topWords` had no test that a plain-object counter fails on the word "constructor". Each gap got a test.
 
@@ -122,4 +123,10 @@ python tools/golden/workbook.py build golden/v1/j2-pilot.yaml j2.xlsx
 
 **Labelling.** The workbook has a *J2 JavaScript* sheet. It shows the spec as the model sees it, the reference, the hidden tests and the mutation result. The expert can **Agree**, **Drop**, or **Correct**: set the behavior and/or describe what to change. Code and test changes are applied by hand, so a corrected case gets `label.status: revise` with the requested changes, and comes back for a quick re-check. Only `labelled` cases count in a gate.
 
-**Batches.** A pilot of 20 (`j2-pilot.yaml`, 18 draft and 2 ask, all dev), then batches of 70. Reviewing a case takes longer than a RuleSpeak case, about 3 to 5 minutes, because the expert reads code. That puts the pilot at about 1 to 1.5 hours, within the plan's 20 to 40 hours for the full 300.
+**Pilot review (2026-11-27).** Joel labelled all 20 pilot cases. Eight were Agree. Five were Correct with specific fixes, which were applied: `median` is limited to finite numbers with an overflow-safe even-count mean, `formatMoney` takes safe integers only, `ageOn` states the zero-padded date precondition, `parseDuration` gained unit-order tests, and the adversarial `countVowels` got the source check above. Seven were set to ask, each with the decision that would settle it. The rule applied: the original case stays as a labelled ask case, since its spec really is ambiguous, and a clarified copy with the decision written into the spec becomes a new draft case (`label.derived_from` names the original, J2-P021 to J2-P027). Where Joel offered options, the first was taken: code points for `truncate`, plain-object order with `__proto__` as an own key for `groupBy`, own properties only for `getPath`, a whole-number `k` for `topWords`, a stated grammar for `parsePercent`, and same-typed keys for `sortBy`. The 12 draft cases (5 corrected, 7 clarified) go back for a re-check:
+
+```sh
+python tools/golden/workbook.py build golden/v1/j2-pilot.yaml recheck.xlsx --status draft
+```
+
+**Batches.** A pilot of 20 (`j2-pilot.yaml`, 18 draft and 2 ask, all dev; 27 after the review), then batches of 70. Reviewing a case takes longer than a RuleSpeak case, about 3 to 5 minutes, because the expert reads code. That puts the pilot at about 1 to 1.5 hours, within the plan's 20 to 40 hours for the full 300.

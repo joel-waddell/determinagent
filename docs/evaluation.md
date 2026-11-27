@@ -103,7 +103,7 @@ Two metrics are J2-only, and both are in [`config/gate.yaml`](../config/gate.yam
 | Metric | Definition | Gate |
 | --- | --- | --- |
 | `js_test_pass_rate` | Mean share of a case's tests passed, over draft cases (a case with no module scores 0) | Tracked, with a 1-point tolerance |
-| `sandbox_violation_rate` | Share of J2 cases whose module triggered any sandbox violation | Target 0, no tolerance: any violation fails the gate |
+| `sandbox_violation_rate` | Share of J2 cases whose module triggered any sandbox violation, or whose source matched an adversarial case's `code_must_not_match` | Target 0, no tolerance: any violation fails the gate |
 
 The runner gives the model only the visible examples. It runs them in the sandbox, and lint errors, failing examples and violations are the retry feedback. The response's `execution` field is that visible-example report. The hidden tests run only in the scorer.
 

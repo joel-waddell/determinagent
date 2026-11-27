@@ -2,6 +2,10 @@
 
     python tools/golden/workbook.py build golden/v1/pilot.yaml out.xlsx
     python tools/golden/workbook.py import golden/v1/pilot.yaml labelled.xlsx
+    python tools/golden/workbook.py build golden/v1/j2-pilot.yaml recheck.xlsx --status draft
+
+"--status draft" builds a re-check workbook of only the cases still in that
+label status; it imports back the same way, since rows are matched by id.
 
 The workbook has one sheet per task. Grey columns are the case and Claude's
 draft; yellow columns are for the domain expert. "import" copies the expert's
@@ -205,8 +209,10 @@ def _requirement_text(r: dict) -> str:
     return "\n".join(lines)
 
 
-def build(batch_path: Path, out_path: Path) -> None:
+def build(batch_path: Path, out_path: Path, status: str | None = None) -> None:
     data = yaml.safe_load(batch_path.read_text(encoding="utf-8"))
+    if status:
+        data["cases"] = [c for c in data["cases"] if c.get("label", {}).get("status") == status]
     wb = Workbook()
     ws = wb.active
     ws.title = "README"
@@ -390,12 +396,15 @@ def import_labels(batch_path: Path, xlsx_path: Path, labeller: str = "domain exp
 
 
 def main(argv: list[str]) -> int:
+    status = None
+    if len(argv) == 5 and argv[0] == "build" and argv[3] == "--status":
+        status, argv = argv[4], argv[:3]
     if len(argv) != 3 or argv[0] not in {"build", "import"}:
         print(__doc__)
         return 2
     cmd, batch, xlsx = argv
     if cmd == "build":
-        build(Path(batch), Path(xlsx))
+        build(Path(batch), Path(xlsx), status)
     else:
         print(import_labels(Path(batch), Path(xlsx)))
     return 0

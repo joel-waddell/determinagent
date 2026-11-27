@@ -239,15 +239,22 @@ describe('escape suite', () => {
 })
 
 describe('mutants', () => {
-  test('one token changes per mutant, and the set is stable', () => {
+  test('one change per mutant, and the set is stable', () => {
     const code = 'export function inc(x) {\n  return x > 0 && true ? x + 1 : 0\n}\n'
     const ms = mutants(code)
     assert.deepEqual(
       ms.map((m) => `${m.from}->${m.to}`),
-      ['>->>=', '0->1', '&&->||', 'true->false', '+->-', '1->0', '0->1'],
+      ['x > 0 && true->negated', 'x > 0 && true ? x + 1 : 0->undefined', '>->>=', '0->1', '&&->||', 'true->false', '+->-', '1->0', '0->1'],
     )
     assert.deepEqual(mutants(code), ms)
     assert.ok(ms.every((m) => m.code !== code))
+  })
+
+  test('structural mutants remove statements and negate conditions', () => {
+    const code = 'export function f(xs) {\n  const out = []\n  for (const x of xs) {\n    if (x < 0) continue\n    out.push(x)\n  }\n  return out\n}\n'
+    const kinds = mutants(code).filter((m) => ['removed', 'negated', 'undefined'].includes(m.to)).map((m) => `${m.from}->${m.to}`)
+    assert.deepEqual(kinds, ['x < 0->negated', 'continue->removed', 'out.push(x)->removed', 'out->undefined'])
+    for (const m of mutants(code)) assert.doesNotThrow(() => new Function(m.code.replaceAll('export ', '')))
   })
 
   test('the cap picks evenly', () => {

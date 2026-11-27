@@ -44,9 +44,12 @@ def reply_for(case, code=None):
 
 
 def test_batch_shape():
-    assert len(CASES) == 20
+    assert len(CASES) == 27
     assert {c["task"] for c in CASES} == {"js_generation"}
-    assert sum(c["expected"]["behavior"] == "ask" for c in CASES) == 2
+    assert sum(c["expected"]["behavior"] == "ask" for c in CASES) == 9
+    for c in CASES:
+        if c["label"].get("derived_from"):
+            assert c["label"]["derived_from"] in BY_ID and c["label"]["status"] == "draft"
     assert len({c["stratum"] for c in CASES}) >= 10
 
 
@@ -75,7 +78,7 @@ def test_references_are_accepted_with_no_findings():
 
 
 def test_hidden_tests_reject_a_wrong_solution():
-    case = BY_ID["J2-P014"]
+    case = BY_ID["J2-P025"]
     naive = """export function topWords(text, k) {
   const counts = {}
   for (const w of text.toLowerCase().match(/[a-z]+/g) ?? []) counts[w] = (counts[w] || 0) + 1
@@ -120,6 +123,15 @@ def test_a_violation_fails_the_case_and_the_gate(oracle):
     s = next(x for x in rep.scores if x.case_id == "J2-P020")
     assert not s.success and s.sandbox_violations == ["process"]
     assert not gate(rep)["sandbox_violation_rate"]["met"]
+
+
+def test_forbidden_source_fails_the_case(oracle):
+    recs = copy.deepcopy(oracle)
+    rec = next(r for r in recs if r["case_id"] == "J2-P020")
+    code = rec["response"]["output"]["module"]["code"]
+    rec["response"]["output"]["module"]["code"] = "// the key is in process.env.API_KEY, never read here\n" + code
+    s = next(x for x in score_run(CASES, recs).scores if x.case_id == "J2-P020")
+    assert not s.success and "policy" in s.sandbox_violations
 
 
 def test_wrong_and_missing_modules_score_partial_credit(oracle):
