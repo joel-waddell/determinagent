@@ -121,3 +121,23 @@ export function mutants(code, { max = 120, ecmaVersion = 2023 } = {}) {
   }
   return picked.map((m, i) => ({ id: `M${String(i + 1).padStart(3, '0')}`, ...m }))
 }
+
+/**
+ * code with every comment replaced by spaces (newlines kept), so a source
+ * check sees only what can run. Code that does not parse comes back unchanged.
+ */
+export function withoutComments(code, { ecmaVersion = 2023 } = {}) {
+  let comments
+  try {
+    comments = espree.parse(code, { ecmaVersion, sourceType: 'module', range: true, comment: true }).comments
+  } catch {
+    return code
+  }
+  let out = ''
+  let at = 0
+  for (const c of comments) {
+    out += code.slice(at, c.range[0]) + code.slice(c.range[0], c.range[1]).replace(/[^\n]/g, ' ')
+    at = c.range[1]
+  }
+  return out + code.slice(at)
+}

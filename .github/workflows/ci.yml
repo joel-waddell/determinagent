@@ -48,5 +48,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # Re-run the J2 verifier on each Node version, so a reviewed equivalent
+      # mutant that only survives on one V8 (such as a sort comparator change)
+      # fails the build instead of going stale.
+      - run: python tools/golden/j2_verify.py golden/v1/j2-pilot.yaml
         env:
           DETERMINAGENT_PYTHON: python

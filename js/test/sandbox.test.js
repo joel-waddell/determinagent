@@ -6,7 +6,7 @@ import { describe, test } from 'node:test'
 
 import { validate } from '../src/contracts.js'
 import { accepted, execute, isolation, testsFromSpec } from '../src/sandbox/index.js'
-import { mutants } from '../src/sandbox/mutate.js'
+import { mutants, withoutComments } from '../src/sandbox/mutate.js'
 
 const SPEC = {
   name: 'inc',
@@ -260,5 +260,20 @@ describe('mutants', () => {
   test('the cap picks evenly', () => {
     const code = `export const f = (x) => ${Array.from({ length: 50 }, (_, i) => `x + ${i + 2}`).join(' + ')}`
     assert.equal(mutants(code, { max: 10 }).length, 10)
+  })
+})
+
+describe('withoutComments', () => {
+  test('blanks comments and keeps strings, lines and columns', () => {
+    const code = "// read process.env\nconst a = 'process.env' /* x\ny */ + 1\n"
+    const out = withoutComments(code)
+    assert.equal(out.length, code.length)
+    assert.equal(out.split('\n').length, code.split('\n').length)
+    assert.ok(!out.includes('read'))
+    assert.ok(out.includes("'process.env'"))
+  })
+
+  test('returns code that does not parse unchanged', () => {
+    assert.equal(withoutComments('const = // x'), 'const = // x')
   })
 })
