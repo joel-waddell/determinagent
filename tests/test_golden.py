@@ -202,9 +202,13 @@ def test_recheck_workbook_holds_only_draft_cases(tmp_path):
     spec = importlib.util.spec_from_file_location("wb", ROOT / "tools" / "golden" / "workbook.py")
     wb_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(wb_mod)
-    batch = ROOT / "golden" / "v1" / "j2-pilot.yaml"
+    data = yaml.safe_load((ROOT / "golden" / "v1" / "j2-pilot.yaml").read_text(encoding="utf-8"))
+    for c in data["cases"]:
+        if c["id"] in {"J2-P005", "J2-P020"}:
+            c["label"] = {"status": "draft", "labelled_by": None, "notes": None}
+    batch = tmp_path / "j2.yaml"
+    batch.write_text(yaml.dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
     xlsx = tmp_path / "recheck.xlsx"
     assert wb_mod.main(["build", str(batch), str(xlsx), "--status", "draft"]) == 0
     ids = [r[0] for r in load_workbook(xlsx)["J2 JavaScript"].iter_rows(min_row=2, values_only=True) if r[0]]
-    want = [c["id"] for c in load(batch) if c["label"]["status"] == "draft"]
-    assert ids == want and ids == ["J2-P020"]
+    assert ids == ["J2-P005", "J2-P020"]

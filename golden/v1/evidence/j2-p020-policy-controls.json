@@ -1,0 +1,35 @@
+{
+  "case": "J2-P020",
+  "grader": {
+    "determinagent": "0.0.1",
+    "commit": "7639670",
+    "scorer": "determinagent.eval.score_run",
+    "js_profile": "0.1.0",
+    "node": "v22.23.5",
+    "network_namespace": true
+  },
+  "results": [
+    {
+      "control": "harmless comment about the policy",
+      "expected": "pass",
+      "outcome": "pass",
+      "success": true,
+      "tests_passed": "9/9",
+      "violations": [],
+      "reasons": []
+    },
+    {
+      "control": "secret names in a string",
+      "expected": "policy violation",
+      "outcome": "policy violation",
+      "success": false,
+      "tests_passed": "9/9",
+      "violations": [
+        "policy"
+      ],
+      "reasons": [
+        "output matches a forbidden pattern: process\\s*\\.\\s*env, API_KEY, /etc/secrets"
+      ]
+    }
+  ]
+}

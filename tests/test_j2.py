@@ -52,7 +52,7 @@ def test_batch_shape():
         if c["label"].get("derived_from"):
             assert c["label"]["derived_from"] in BY_ID
     labels = [c["label"]["status"] for c in CASES]
-    assert labels.count("labelled") == 26 and labels.count("draft") == 1
+    assert labels == ["labelled"] * 27
     assert len({c["stratum"] for c in CASES}) >= 10
 
 
